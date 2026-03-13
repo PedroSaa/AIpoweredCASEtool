@@ -67,7 +67,7 @@ public class {{ entity.nombre }}Controller : ControllerBase
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         var created = await _service.CreateAsync(dto);
-        return CreatedAtAction(nameof(GetById), new { id = created }, created);
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
     {{- end }}
 

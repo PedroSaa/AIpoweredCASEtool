@@ -123,6 +123,8 @@ GO
 
 CREATE PROCEDURE [{{ project.schema }}].[sp_{{ entity.nombre }}_Update]
     @Id INT,
+    {{- param_campos = [] }}
+    {{- for c in entity.campos }}{{- if !c.es_pk }}{{- param_campos = param_campos | array.add c }}{{- end }}{{- end }}
     {{- for i in 0..(param_campos.size - 1) }}
     {{- campo = param_campos[i] }}
     @{{ campo.nombre }} {{ campo.tipo | sql_type campo.largo campo.precision campo.escala }}{{ if !campo.requerido }} = NULL{{ end }}{{ if i < param_campos.size - 1 }},{{ end }}
