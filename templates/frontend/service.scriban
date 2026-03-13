@@ -1,0 +1,35 @@
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { ApiService, PagedResult } from './api.service';
+import {
+  {{ entity.nombre }},
+  {{ entity.nombre }}CreateDto,
+  {{ entity.nombre }}UpdateDto
+} from '../models/{{ entity.nombre | to_kebab_case }}.model';
+
+@Injectable({ providedIn: 'root' })
+export class {{ entity.nombre }}Service {
+  private readonly endpoint = '{{ entity.api.ruta ?? "/api/" + (entity.nombre | to_kebab_case) + "s" }}';
+
+  constructor(private api: ApiService) {}
+
+  getAll(page = 1, pageSize = {{ entity.pantallas.listado.paginacion.registros_por_pagina ?? 10 }}, filters?: Record<string, string>): Observable<PagedResult<{{ entity.nombre }}>> {
+    return this.api.getAll<{{ entity.nombre }}>(this.endpoint, page, pageSize, filters);
+  }
+
+  getById(id: number): Observable<{{ entity.nombre }}> {
+    return this.api.getById<{{ entity.nombre }}>(this.endpoint, id);
+  }
+
+  create(dto: {{ entity.nombre }}CreateDto): Observable<{{ entity.nombre }}> {
+    return this.api.create<{{ entity.nombre }}>(this.endpoint, dto);
+  }
+
+  update(id: number, dto: {{ entity.nombre }}UpdateDto): Observable<{{ entity.nombre }}> {
+    return this.api.update<{{ entity.nombre }}>(this.endpoint, id, dto);
+  }
+
+  delete(id: number): Observable<void> {
+    return this.api.delete(this.endpoint, id);
+  }
+}

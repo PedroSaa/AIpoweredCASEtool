@@ -1,0 +1,97 @@
+<div class="page-container">
+  <!-- Encabezado -->
+  <div class="page-header">
+    <h1 class="page-title">{{ entity.pantallas.listado.titulo ?? entity.nombre + "s" }}</h1>
+    <button mat-raised-button color="primary" (click)="onNew()">
+      <mat-icon>add</mat-icon>
+      Nuevo {{ entity.nombre }}
+    </button>
+  </div>
+
+  <!-- Filtros -->
+  <mat-card class="filter-card">
+    <mat-card-content>
+      <div class="filter-row">
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>Buscar...</mat-label>
+          <input matInput [(ngModel)]="searchTerm" (keyup.enter)="onSearch()" />
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+        <button mat-stroked-button (click)="onSearch()">Buscar</button>
+        <button mat-stroked-button (click)="searchTerm = ''; loadData()">Limpiar</button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Indicador de carga -->
+  <div *ngIf="isLoading" class="loading-overlay">
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+  </div>
+
+  <!-- Tabla -->
+  <mat-card class="table-card">
+    <mat-card-content>
+      <table mat-table [dataSource]="items" matSort class="full-width-table mat-elevation-z1">
+
+        <!-- Columnas de datos -->
+        {{- for col in entity.pantallas.listado.columnas }}
+        <ng-container matColumnDef="{{ col | to_camel_case }}">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ col }}</th>
+          <td mat-cell *matCellDef="let row">
+            <ng-container *ngIf="typeof row.{{ col | to_camel_case }} === 'boolean'; else textCell_{{ col | to_camel_case }}">
+              <mat-icon [color]="row.{{ col | to_camel_case }} ? 'primary' : ''">
+                {{ "{{" }} row.{{ col | to_camel_case }} ? 'check_circle' : 'cancel' {{ "}}" }}
+              </mat-icon>
+            </ng-container>
+            <ng-template #textCell_{{ col | to_camel_case }}>{{ "{{" }} row.{{ col | to_camel_case }} {{ "}}" }}</ng-template>
+          </td>
+        </ng-container>
+        {{- end }}
+
+        <!-- Columna de acciones -->
+        <ng-container matColumnDef="acciones">
+          <th mat-header-cell *matHeaderCellDef>Acciones</th>
+          <td mat-cell *matCellDef="let row">
+            {{- for accion in entity.pantallas.listado.acciones }}
+            {{- if accion == "editar" }}
+            <button mat-icon-button color="primary" (click)="onEdit(row.id)" matTooltip="Editar">
+              <mat-icon>edit</mat-icon>
+            </button>
+            {{- end }}
+            {{- if accion == "eliminar" }}
+            <button mat-icon-button color="warn" (click)="onDelete(row.id)" matTooltip="Eliminar">
+              <mat-icon>delete</mat-icon>
+            </button>
+            {{- end }}
+            {{- if accion == "ver" }}
+            <button mat-icon-button (click)="onEdit(row.id)" matTooltip="Ver detalle">
+              <mat-icon>visibility</mat-icon>
+            </button>
+            {{- end }}
+            {{- end }}
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+        <tr class="mat-row" *matNoDataRow>
+          <td class="mat-cell no-data-cell" [attr.colspan]="displayedColumns.length">
+            <mat-icon>search_off</mat-icon>
+            No se encontraron registros.
+          </td>
+        </tr>
+      </table>
+
+      <!-- Paginación -->
+      <mat-paginator
+        [length]="totalCount"
+        [pageIndex]="page - 1"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        showFirstLastButtons
+        (page)="onPageChange($event)">
+      </mat-paginator>
+    </mat-card-content>
+  </mat-card>
+</div>

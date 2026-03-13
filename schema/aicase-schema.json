@@ -1,0 +1,596 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aicase.dev/schema/aicase-schema.json",
+  "title": "AICASE Project Schema",
+  "description": "Esquema JSON para definición de proyectos en la herramienta AICASE",
+  "type": "object",
+  "required": ["nombre", "version", "tecnologias", "entidades"],
+  "properties": {
+    "nombre": {
+      "type": "string",
+      "description": "Nombre del proyecto",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "version": {
+      "type": "string",
+      "description": "Versión del proyecto",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "descripcion": {
+      "type": "string",
+      "description": "Descripción del proyecto",
+      "maxLength": 500
+    },
+    "tecnologias": {
+      "$ref": "#/definitions/TechnologyConfig"
+    },
+    "entidades": {
+      "type": "array",
+      "description": "Lista de entidades del proyecto",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/EntityDefinition"
+      }
+    },
+    "configuracion": {
+      "$ref": "#/definitions/GlobalConfig"
+    }
+  },
+  "definitions": {
+    "TechnologyConfig": {
+      "type": "object",
+      "description": "Configuración de tecnologías del proyecto",
+      "properties": {
+        "backend": {
+          "type": "string",
+          "description": "Tecnología backend",
+          "enum": ["dotnet8", "dotnet6", "java-spring", "node-express"]
+        },
+        "frontend": {
+          "type": "string",
+          "description": "Tecnología frontend",
+          "enum": ["angular17", "angular16", "react18", "vue3"]
+        },
+        "baseDatos": {
+          "type": "string",
+          "description": "Motor de base de datos",
+          "enum": ["sqlserver", "postgresql", "mysql", "sqlite"]
+        }
+      }
+    },
+    "EntityDefinition": {
+      "type": "object",
+      "description": "Definición de una entidad del dominio",
+      "required": ["nombre", "tabla", "campos"],
+      "properties": {
+        "nombre": {
+          "type": "string",
+          "description": "Nombre de la entidad (PascalCase)",
+          "pattern": "^[A-Z][a-zA-Z0-9]*$"
+        },
+        "tabla": {
+          "type": "string",
+          "description": "Nombre de la tabla en la base de datos"
+        },
+        "descripcion": {
+          "type": "string",
+          "description": "Descripción de la entidad"
+        },
+        "campos": {
+          "type": "array",
+          "description": "Lista de campos/columnas de la entidad",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/FieldDefinition"
+          }
+        },
+        "relaciones": {
+          "type": "array",
+          "description": "Relaciones con otras entidades",
+          "items": {
+            "$ref": "#/definitions/RelationDefinition"
+          }
+        },
+        "reglasNegocio": {
+          "type": "array",
+          "description": "Reglas de negocio de la entidad",
+          "items": {
+            "$ref": "#/definitions/BusinessRule"
+          }
+        },
+        "pantallas": {
+          "$ref": "#/definitions/ScreenConfig"
+        },
+        "api": {
+          "$ref": "#/definitions/ApiConfig"
+        }
+      }
+    },
+    "FieldDefinition": {
+      "type": "object",
+      "description": "Definición de un campo de la entidad",
+      "required": ["nombre", "tipo"],
+      "properties": {
+        "nombre": {
+          "type": "string",
+          "description": "Nombre del campo (PascalCase)",
+          "pattern": "^[A-Z][a-zA-Z0-9]*$"
+        },
+        "tipo": {
+          "type": "string",
+          "description": "Tipo de dato del campo",
+          "enum": ["string", "int", "long", "decimal", "double", "float", "date", "datetime", "bool", "guid", "byte[]"]
+        },
+        "largo": {
+          "type": "integer",
+          "description": "Longitud máxima (para strings)",
+          "minimum": 1,
+          "maximum": 8000
+        },
+        "precision": {
+          "type": "integer",
+          "description": "Precisión total de dígitos (para decimal)",
+          "minimum": 1,
+          "maximum": 38
+        },
+        "escala": {
+          "type": "integer",
+          "description": "Dígitos decimales (para decimal)",
+          "minimum": 0,
+          "maximum": 38
+        },
+        "requerido": {
+          "type": "boolean",
+          "description": "Indica si el campo es obligatorio",
+          "default": false
+        },
+        "unico": {
+          "type": "boolean",
+          "description": "Indica si el campo debe ser único",
+          "default": false
+        },
+        "esPK": {
+          "type": "boolean",
+          "description": "Indica si el campo es clave primaria",
+          "default": false
+        },
+        "autoIncremento": {
+          "type": "boolean",
+          "description": "Indica si el campo es auto-incremental",
+          "default": false
+        },
+        "valorPorDefecto": {
+          "description": "Valor por defecto del campo"
+        },
+        "validaciones": {
+          "type": "array",
+          "description": "Reglas de validación del campo",
+          "items": {
+            "$ref": "#/definitions/ValidationRule"
+          }
+        },
+        "input": {
+          "$ref": "#/definitions/InputConfig"
+        },
+        "relacion": {
+          "$ref": "#/definitions/RelationDefinition"
+        }
+      }
+    },
+    "ValidationRule": {
+      "type": "object",
+      "description": "Regla de validación para un campo",
+      "required": ["tipo"],
+      "properties": {
+        "tipo": {
+          "type": "string",
+          "description": "Tipo de validación",
+          "enum": [
+            "minLength",
+            "maxLength",
+            "min",
+            "max",
+            "email",
+            "regex",
+            "fechaMaxima",
+            "fechaMinima",
+            "personalizado",
+            "requerido",
+            "rango"
+          ]
+        },
+        "valor": {
+          "description": "Valor de la validación (número, cadena, expresión)"
+        },
+        "mensaje": {
+          "type": "string",
+          "description": "Mensaje de error personalizado"
+        }
+      }
+    },
+    "InputConfig": {
+      "type": "object",
+      "description": "Configuración del control de interfaz de usuario para el campo",
+      "required": ["tipo"],
+      "properties": {
+        "tipo": {
+          "type": "string",
+          "description": "Tipo de control UI",
+          "enum": [
+            "text",
+            "email",
+            "number",
+            "datepicker",
+            "dropdown",
+            "checkbox",
+            "textarea",
+            "radio",
+            "autocomplete",
+            "password",
+            "file",
+            "colorpicker",
+            "timepicker"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "description": "Etiqueta visible del campo"
+        },
+        "placeholder": {
+          "type": "string",
+          "description": "Texto de marcador de posición"
+        },
+        "fuenteDatos": {
+          "type": "string",
+          "description": "Nombre de la entidad fuente para dropdowns/autocomplete"
+        },
+        "campoValor": {
+          "type": "string",
+          "description": "Campo a usar como valor en dropdown"
+        },
+        "campoTexto": {
+          "type": "string",
+          "description": "Campo a usar como texto visible en dropdown"
+        },
+        "soloLectura": {
+          "type": "boolean",
+          "description": "Si el campo es solo lectura",
+          "default": false
+        },
+        "ocultarEnFormulario": {
+          "type": "boolean",
+          "description": "Si se oculta en el formulario",
+          "default": false
+        },
+        "ocultarEnListado": {
+          "type": "boolean",
+          "description": "Si se oculta en el listado",
+          "default": false
+        }
+      }
+    },
+    "RelationDefinition": {
+      "type": "object",
+      "description": "Definición de una relación entre entidades",
+      "required": ["tipo", "entidad"],
+      "properties": {
+        "tipo": {
+          "type": "string",
+          "description": "Tipo de relación",
+          "enum": ["ManyToOne", "OneToMany", "ManyToMany", "OneToOne"]
+        },
+        "entidad": {
+          "type": "string",
+          "description": "Nombre de la entidad destino"
+        },
+        "campo": {
+          "type": "string",
+          "description": "Campo de la entidad destino que se referencia"
+        },
+        "nombrePropiedad": {
+          "type": "string",
+          "description": "Nombre de la propiedad de navegación generada"
+        },
+        "cascada": {
+          "type": "boolean",
+          "description": "Si aplica eliminación en cascada",
+          "default": false
+        }
+      }
+    },
+    "BusinessRule": {
+      "type": "object",
+      "description": "Regla de negocio de una entidad",
+      "required": ["nombre", "trigger"],
+      "properties": {
+        "nombre": {
+          "type": "string",
+          "description": "Nombre identificador de la regla"
+        },
+        "trigger": {
+          "type": "string",
+          "description": "Momento en que se dispara la regla",
+          "enum": [
+            "antesDeInsertar",
+            "antesDeActualizar",
+            "antesDeEliminar",
+            "despuesDeInsertar",
+            "despuesDeActualizar",
+            "despuesDeEliminar",
+            "antesDeGuardar",
+            "despuesDeGuardar",
+            "alValidar"
+          ]
+        },
+        "condicion": {
+          "type": "string",
+          "description": "Condición en pseudocódigo o expresión"
+        },
+        "accion": {
+          "type": "string",
+          "description": "Acción en pseudocódigo a ejecutar"
+        },
+        "mensaje": {
+          "type": "string",
+          "description": "Mensaje de error si la regla falla"
+        },
+        "activa": {
+          "type": "boolean",
+          "description": "Si la regla está activa",
+          "default": true
+        }
+      }
+    },
+    "ScreenConfig": {
+      "type": "object",
+      "description": "Configuración de pantallas (listado y formulario)",
+      "properties": {
+        "listado": {
+          "$ref": "#/definitions/ListScreenConfig"
+        },
+        "formulario": {
+          "$ref": "#/definitions/FormScreenConfig"
+        }
+      }
+    },
+    "ListScreenConfig": {
+      "type": "object",
+      "description": "Configuración de pantalla de listado",
+      "properties": {
+        "titulo": {
+          "type": "string",
+          "description": "Título de la pantalla"
+        },
+        "columnas": {
+          "type": "array",
+          "description": "Nombres de campos a mostrar como columnas",
+          "items": { "type": "string" }
+        },
+        "acciones": {
+          "type": "array",
+          "description": "Acciones disponibles (ver, editar, eliminar, etc.)",
+          "items": {
+            "type": "string",
+            "enum": ["ver", "editar", "eliminar", "exportar", "imprimir", "personalizado"]
+          }
+        },
+        "filtros": {
+          "type": "array",
+          "description": "Campos por los que se puede filtrar",
+          "items": { "type": "string" }
+        },
+        "paginacion": {
+          "$ref": "#/definitions/PaginationConfig"
+        },
+        "ordenamiento": {
+          "type": "string",
+          "description": "Campo por defecto para ordenar"
+        },
+        "ordenAscendente": {
+          "type": "boolean",
+          "description": "Si el orden por defecto es ascendente",
+          "default": true
+        }
+      }
+    },
+    "FormScreenConfig": {
+      "type": "object",
+      "description": "Configuración de pantalla de formulario",
+      "properties": {
+        "titulo": {
+          "type": "string",
+          "description": "Título del formulario"
+        },
+        "layout": {
+          "type": "string",
+          "description": "Disposición del formulario",
+          "enum": ["simple", "tabs", "steps", "accordion", "two-columns"]
+        },
+        "campos": {
+          "type": "array",
+          "description": "Campos a incluir en el formulario",
+          "items": { "type": "string" }
+        },
+        "secciones": {
+          "type": "array",
+          "description": "Secciones del formulario",
+          "items": {
+            "$ref": "#/definitions/FormSection"
+          }
+        }
+      }
+    },
+    "PaginationConfig": {
+      "type": "object",
+      "description": "Configuración de paginación",
+      "properties": {
+        "registrosPorPagina": {
+          "type": "integer",
+          "description": "Registros por página",
+          "minimum": 5,
+          "maximum": 200,
+          "default": 10
+        },
+        "mostrarTodos": {
+          "type": "boolean",
+          "description": "Opción para mostrar todos los registros",
+          "default": false
+        },
+        "opcionesTamano": {
+          "type": "array",
+          "description": "Opciones de tamaño de página",
+          "items": { "type": "integer" }
+        }
+      }
+    },
+    "FormSection": {
+      "type": "object",
+      "description": "Sección de un formulario",
+      "required": ["titulo", "campos"],
+      "properties": {
+        "titulo": {
+          "type": "string",
+          "description": "Título de la sección"
+        },
+        "campos": {
+          "type": "array",
+          "description": "Campos incluidos en la sección",
+          "items": { "type": "string" }
+        },
+        "columnas": {
+          "type": "integer",
+          "description": "Número de columnas del layout",
+          "minimum": 1,
+          "maximum": 4,
+          "default": 2
+        },
+        "colapsable": {
+          "type": "boolean",
+          "description": "Si la sección es colapsable",
+          "default": false
+        }
+      }
+    },
+    "ApiConfig": {
+      "type": "object",
+      "description": "Configuración de la API REST para la entidad",
+      "properties": {
+        "ruta": {
+          "type": "string",
+          "description": "Ruta base de la API (ej: /api/clientes)"
+        },
+        "operaciones": {
+          "type": "array",
+          "description": "Operaciones CRUD habilitadas",
+          "items": {
+            "type": "string",
+            "enum": ["getAll", "getById", "create", "update", "delete", "search", "export"]
+          }
+        },
+        "autenticacion": {
+          "type": "boolean",
+          "description": "Si la API requiere autenticación",
+          "default": true
+        },
+        "roles": {
+          "type": "array",
+          "description": "Roles con acceso a esta API",
+          "items": { "type": "string" }
+        },
+        "versionApi": {
+          "type": "string",
+          "description": "Versión de la API"
+        }
+      }
+    },
+    "GlobalConfig": {
+      "type": "object",
+      "description": "Configuración global del proyecto",
+      "properties": {
+        "autenticacion": {
+          "$ref": "#/definitions/AuthConfig"
+        },
+        "roles": {
+          "type": "array",
+          "description": "Roles del sistema",
+          "items": { "type": "string" }
+        },
+        "baseDatos": {
+          "$ref": "#/definitions/DatabaseConfig"
+        },
+        "namespaceBackend": {
+          "type": "string",
+          "description": "Namespace base del proyecto backend"
+        },
+        "nombreFrontend": {
+          "type": "string",
+          "description": "Nombre del proyecto Angular"
+        },
+        "cors": {
+          "type": "array",
+          "description": "Orígenes permitidos para CORS",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "AuthConfig": {
+      "type": "object",
+      "description": "Configuración de autenticación",
+      "properties": {
+        "tipo": {
+          "type": "string",
+          "description": "Tipo de autenticación",
+          "enum": ["jwt", "oauth2", "apikey", "none"]
+        },
+        "key": {
+          "type": "string",
+          "description": "Clave secreta JWT"
+        },
+        "issuer": {
+          "type": "string",
+          "description": "Emisor del token JWT"
+        },
+        "audience": {
+          "type": "string",
+          "description": "Audiencia del token JWT"
+        },
+        "expireMinutes": {
+          "type": "integer",
+          "description": "Minutos de expiración del token",
+          "minimum": 1
+        }
+      }
+    },
+    "DatabaseConfig": {
+      "type": "object",
+      "description": "Configuración de conexión a la base de datos",
+      "properties": {
+        "servidor": {
+          "type": "string",
+          "description": "Servidor de base de datos"
+        },
+        "nombreBaseDatos": {
+          "type": "string",
+          "description": "Nombre de la base de datos"
+        },
+        "usuario": {
+          "type": "string",
+          "description": "Usuario de la base de datos"
+        },
+        "contrasena": {
+          "type": "string",
+          "description": "Contraseña de la base de datos"
+        },
+        "puerto": {
+          "type": "integer",
+          "description": "Puerto de conexión"
+        },
+        "esquema": {
+          "type": "string",
+          "description": "Esquema por defecto (ej: dbo)"
+        }
+      }
+    }
+  }
+}

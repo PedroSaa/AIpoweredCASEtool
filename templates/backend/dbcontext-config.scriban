@@ -1,0 +1,63 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using {{ project.namespace }}.Models;
+
+namespace {{ project.namespace }}.Data.Configurations;
+
+/// <summary>Configuración de Entity Framework Core para la entidad {{ entity.nombre }}.</summary>
+public class {{ entity.nombre }}Configuration : IEntityTypeConfiguration<{{ entity.nombre }}>
+{
+    public void Configure(EntityTypeBuilder<{{ entity.nombre }}> builder)
+    {
+        builder.ToTable("{{ entity.tabla }}");
+
+        // ── Clave primaria ────────────────────────────────────────────────────
+        {{- for campo in entity.campos }}
+        {{- if campo.es_pk }}
+        builder.HasKey(e => e.{{ campo.nombre }});
+        {{- if campo.auto_incremento }}
+        builder.Property(e => e.{{ campo.nombre }})
+               .ValueGeneratedOnAdd();
+        {{- end }}
+        {{- end }}
+        {{- end }}
+
+        // ── Propiedades ───────────────────────────────────────────────────────
+        {{- for campo in entity.campos }}
+        {{- if !campo.es_pk }}
+        builder.Property(e => e.{{ campo.nombre }})
+            {{- if campo.requerido }}
+               .IsRequired()
+            {{- end }}
+            {{- if campo.largo && campo.largo > 0 }}
+               .HasMaxLength({{ campo.largo }})
+            {{- end }}
+            {{- if campo.tipo == "decimal" }}
+               .HasPrecision({{ campo.precision ?? 18 }}, {{ campo.escala ?? 2 }})
+            {{- end }}
+            {{- if campo.tipo == "date" }}
+               .HasColumnType("DATE")
+            {{- end }}
+               ;
+
+        {{- if campo.unico }}
+        builder.HasIndex(e => e.{{ campo.nombre }})
+               .IsUnique()
+               .HasDatabaseName("UQ_{{ entity.tabla }}_{{ campo.nombre }}");
+
+        {{- end }}
+        {{- end }}
+        {{- end }}
+
+        // ── Relaciones ────────────────────────────────────────────────────────
+        {{- for rel in entity.relaciones }}
+        {{- if rel.tipo == "ManyToOne" }}
+        builder.HasOne(e => e.{{ rel.nombre_propiedad ?? rel.entidad }})
+               .WithMany()
+               .HasForeignKey("{{ rel.campo ?? rel.entidad + "Id" }}")
+               .OnDelete({{ if rel.cascada }}DeleteBehavior.Cascade{{ else }}DeleteBehavior.Restrict{{ end }});
+
+        {{- end }}
+        {{- end }}
+    }
+}

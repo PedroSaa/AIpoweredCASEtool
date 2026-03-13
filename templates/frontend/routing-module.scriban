@@ -1,0 +1,34 @@
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+{{- for entity in entities }}
+import { {{ entity.nombre }}ListComponent } from './components/{{ entity.nombre | to_kebab_case }}/list/{{ entity.nombre | to_kebab_case }}-list.component';
+import { {{ entity.nombre }}FormComponent } from './components/{{ entity.nombre | to_kebab_case }}/form/{{ entity.nombre | to_kebab_case }}-form.component';
+{{- end }}
+
+const routes: Routes = [
+  { path: '', redirectTo: '{{ entities[0].nombre | to_kebab_case }}s', pathMatch: 'full' },
+  {{- for entity in entities }}
+  {
+    path: '{{ entity.nombre | to_kebab_case }}s',
+    component: {{ entity.nombre }}ListComponent,
+    title: '{{ entity.pantallas.listado.titulo ?? entity.nombre + "s" }}'
+  },
+  {
+    path: '{{ entity.nombre | to_kebab_case }}s/new',
+    component: {{ entity.nombre }}FormComponent,
+    title: 'Nuevo {{ entity.nombre }}'
+  },
+  {
+    path: '{{ entity.nombre | to_kebab_case }}s/:id/edit',
+    component: {{ entity.nombre }}FormComponent,
+    title: 'Editar {{ entity.nombre }}'
+  },
+  {{- end }}
+  { path: '**', redirectTo: '{{ entities[0].nombre | to_kebab_case }}s' }
+];
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes, { scrollPositionRestoration: 'top' })],
+  exports: [RouterModule]
+})
+export class AppRoutingModule { }

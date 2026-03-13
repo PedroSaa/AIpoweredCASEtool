@@ -1,0 +1,22 @@
+// Generado por AICASE - No modificar manualmente
+// Proyecto: {{ project.nombre }} v{{ project.version }}
+
+export interface {{ entity.nombre }} {
+  {{- for campo in entity.campos }}
+  {{ campo.nombre | to_camel_case }}: {{ campo.tipo | typescript_type }}{{ if !campo.requerido && !campo.es_pk }} | null{{ end }};
+  {{- end }}
+}
+
+export interface {{ entity.nombre }}CreateDto {
+  {{- for campo in entity.campos }}
+  {{- if !campo.es_pk }}
+  {{ campo.nombre | to_camel_case }}{{ if !campo.requerido }}?{{ end }}: {{ campo.tipo | typescript_type }}{{ if !campo.requerido }} | null{{ end }};
+  {{- end }}
+  {{- end }}
+}
+
+export interface {{ entity.nombre }}UpdateDto extends {{ entity.nombre }}CreateDto {
+  id: number;
+}
+
+export interface {{ entity.nombre }}ResponseDto extends {{ entity.nombre }} {}

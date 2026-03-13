@@ -1,0 +1,101 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using {{ project.namespace }}.DTOs;
+using {{ project.namespace }}.Services;
+
+namespace {{ project.namespace }}.Controllers;
+
+/// <summary>Controlador REST para {{ entity.nombre }}.</summary>
+[ApiController]
+[Route("{{ entity.api.ruta ?? ("/api/" + (entity.nombre | to_kebab_case) + "s") }}")]
+{{- if entity.api.autenticacion }}
+{{- if entity.api.roles && entity.api.roles.size > 0 }}
+[Authorize(Roles = "{{ array.join entity.api.roles ", " }}")]
+{{- else }}
+[Authorize]
+{{- end }}
+{{- end }}
+public class {{ entity.nombre }}Controller : ControllerBase
+{
+    private readonly I{{ entity.nombre }}Service _service;
+
+    public {{ entity.nombre }}Controller(I{{ entity.nombre }}Service service)
+    {
+        _service = service;
+    }
+
+    {{- if array.contains entity.api.operaciones "getAll" }}
+    /// <summary>Obtiene todos los {{ entity.nombre }}s con paginación.</summary>
+    [HttpGet]
+    [ProducesResponseType(typeof(object), 200)]
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = {{ entity.pantallas.listado.paginacion.registros_por_pagina ?? 10 }},
+        [FromQuery] string? search = null)
+    {
+        var (items, total) = await _service.GetAllAsync(page, pageSize, search);
+        return Ok(new
+        {
+            items,
+            totalCount = total,
+            page,
+            pageSize,
+            totalPages = (int)Math.Ceiling((double)total / pageSize)
+        });
+    }
+    {{- end }}
+
+    {{- if array.contains entity.api.operaciones "getById" }}
+    /// <summary>Obtiene un {{ entity.nombre }} por su Id.</summary>
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof({{ entity.nombre }}ResponseDto), 200)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var item = await _service.GetByIdAsync(id);
+        return item == null ? NotFound(new { message = $"{{ entity.nombre }} con Id {id} no encontrado." })
+                            : Ok(item);
+    }
+    {{- end }}
+
+    {{- if array.contains entity.api.operaciones "create" }}
+    /// <summary>Crea un nuevo {{ entity.nombre }}.</summary>
+    [HttpPost]
+    [ProducesResponseType(typeof({{ entity.nombre }}ResponseDto), 201)]
+    [ProducesResponseType(400)]
+    public async Task<IActionResult> Create([FromBody] {{ entity.nombre }}CreateDto dto)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var created = await _service.CreateAsync(dto);
+        return CreatedAtAction(nameof(GetById), new { id = created }, created);
+    }
+    {{- end }}
+
+    {{- if array.contains entity.api.operaciones "update" }}
+    /// <summary>Actualiza un {{ entity.nombre }} existente.</summary>
+    [HttpPut("{id:int}")]
+    [ProducesResponseType(typeof({{ entity.nombre }}ResponseDto), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> Update(int id, [FromBody] {{ entity.nombre }}UpdateDto dto)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var updated = await _service.UpdateAsync(id, dto);
+        return updated == null ? NotFound(new { message = $"{{ entity.nombre }} con Id {id} no encontrado." })
+                               : Ok(updated);
+    }
+    {{- end }}
+
+    {{- if array.contains entity.api.operaciones "delete" }}
+    /// <summary>Elimina un {{ entity.nombre }} por su Id.</summary>
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var deleted = await _service.DeleteAsync(id);
+        return deleted ? NoContent()
+                       : NotFound(new { message = $"{{ entity.nombre }} con Id {id} no encontrado." });
+    }
+    {{- end }}
+}

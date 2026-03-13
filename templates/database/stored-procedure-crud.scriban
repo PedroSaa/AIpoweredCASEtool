@@ -1,0 +1,163 @@
+-- ============================================================
+-- Stored Procedures CRUD - {{ entity.nombre }}
+-- Tabla: [{{ project.schema }}].[{{ entity.tabla }}]
+-- Proyecto: {{ project.nombre }}
+-- Generado por AICASE
+-- ============================================================
+
+USE [{{ project.database }}]
+GO
+
+-- ── sp_{{ entity.nombre }}_GetAll ─────────────────────────────────────────
+PRINT 'Creando sp_{{ entity.nombre }}_GetAll...';
+GO
+IF OBJECT_ID(N'[{{ project.schema }}].[sp_{{ entity.nombre }}_GetAll]', 'P') IS NOT NULL
+    DROP PROCEDURE [{{ project.schema }}].[sp_{{ entity.nombre }}_GetAll];
+GO
+
+CREATE PROCEDURE [{{ project.schema }}].[sp_{{ entity.nombre }}_GetAll]
+    @Page       INT            = 1,
+    @PageSize   INT            = 10,
+    @Search     NVARCHAR(200)  = NULL,
+    @OrderBy    NVARCHAR(100)  = N'{{ entity.pantallas.listado.ordenamiento ?? "Id" }}',
+    @Ascending  BIT            = 1
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @Offset INT = (@Page - 1) * @PageSize;
+
+    ;WITH CTE AS (
+        SELECT
+            COUNT(1) OVER() AS TotalCount,
+            {{- for i in 0..(entity.campos.size - 1) }}
+            {{- campo = entity.campos[i] }}
+            t.[{{ campo.nombre }}]{{ if i < entity.campos.size - 1 }},{{ end }}
+            {{- end }}
+        FROM [{{ project.schema }}].[{{ entity.tabla }}] t
+        {{- for rel in entity.relaciones }}
+        {{- if rel.tipo == "ManyToOne" }}
+        LEFT JOIN [{{ project.schema }}].[{{ rel.entidad }}s] {{ rel.entidad | string.downcase }}
+               ON t.[{{ rel.entidad }}Id] = {{ rel.entidad | string.downcase }}.[Id]
+        {{- end }}
+        {{- end }}
+        WHERE (
+            @Search IS NULL
+            {{- for campo in entity.campos }}
+            {{- if campo.tipo == "string" && !campo.es_pk }}
+            OR t.[{{ campo.nombre }}] LIKE N'%' + @Search + '%'
+            {{- end }}
+            {{- end }}
+        )
+    )
+    SELECT TotalCount,
+           {{- for i in 0..(entity.campos.size - 1) }}
+           {{- campo = entity.campos[i] }}
+           [{{ campo.nombre }}]{{ if i < entity.campos.size - 1 }},{{ end }}
+           {{- end }}
+    FROM CTE
+    ORDER BY
+        CASE WHEN @Ascending = 1 AND @OrderBy = 'Id' THEN [Id] END ASC
+    OFFSET @Offset ROWS
+    FETCH NEXT @PageSize ROWS ONLY;
+END
+GO
+
+-- ── sp_{{ entity.nombre }}_GetById ────────────────────────────────────────
+IF OBJECT_ID(N'[{{ project.schema }}].[sp_{{ entity.nombre }}_GetById]', 'P') IS NOT NULL
+    DROP PROCEDURE [{{ project.schema }}].[sp_{{ entity.nombre }}_GetById];
+GO
+
+CREATE PROCEDURE [{{ project.schema }}].[sp_{{ entity.nombre }}_GetById]
+    @Id INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT
+        {{- for i in 0..(entity.campos.size - 1) }}
+        {{- campo = entity.campos[i] }}
+        [{{ campo.nombre }}]{{ if i < entity.campos.size - 1 }},{{ end }}
+        {{- end }}
+    FROM [{{ project.schema }}].[{{ entity.tabla }}]
+    WHERE [{{ entity.primary_key.nombre ?? "Id" }}] = @Id;
+END
+GO
+
+-- ── sp_{{ entity.nombre }}_Insert ─────────────────────────────────────────
+IF OBJECT_ID(N'[{{ project.schema }}].[sp_{{ entity.nombre }}_Insert]', 'P') IS NOT NULL
+    DROP PROCEDURE [{{ project.schema }}].[sp_{{ entity.nombre }}_Insert];
+GO
+
+CREATE PROCEDURE [{{ project.schema }}].[sp_{{ entity.nombre }}_Insert]
+    {{- param_campos = [] }}
+    {{- for c in entity.campos }}{{- if !c.es_pk }}{{- param_campos = param_campos | array.add c }}{{- end }}{{- end }}
+    {{- for i in 0..(param_campos.size - 1) }}
+    {{- campo = param_campos[i] }}
+    @{{ campo.nombre }} {{ campo.tipo | sql_type campo.largo campo.precision campo.escala }}{{ if !campo.requerido }} = NULL{{ end }}{{ if i < param_campos.size - 1 }},{{ end }}
+    {{- end }}
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO [{{ project.schema }}].[{{ entity.tabla }}] (
+        {{- for i in 0..(param_campos.size - 1) }}
+        {{- campo = param_campos[i] }}
+        [{{ campo.nombre }}]{{ if i < param_campos.size - 1 }},{{ end }}
+        {{- end }}
+    )
+    VALUES (
+        {{- for i in 0..(param_campos.size - 1) }}
+        {{- campo = param_campos[i] }}
+        @{{ campo.nombre }}{{ if i < param_campos.size - 1 }},{{ end }}
+        {{- end }}
+    );
+
+    SELECT SCOPE_IDENTITY() AS NewId;
+END
+GO
+
+-- ── sp_{{ entity.nombre }}_Update ─────────────────────────────────────────
+IF OBJECT_ID(N'[{{ project.schema }}].[sp_{{ entity.nombre }}_Update]', 'P') IS NOT NULL
+    DROP PROCEDURE [{{ project.schema }}].[sp_{{ entity.nombre }}_Update];
+GO
+
+CREATE PROCEDURE [{{ project.schema }}].[sp_{{ entity.nombre }}_Update]
+    @Id INT,
+    {{- for i in 0..(param_campos.size - 1) }}
+    {{- campo = param_campos[i] }}
+    @{{ campo.nombre }} {{ campo.tipo | sql_type campo.largo campo.precision campo.escala }}{{ if !campo.requerido }} = NULL{{ end }}{{ if i < param_campos.size - 1 }},{{ end }}
+    {{- end }}
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE [{{ project.schema }}].[{{ entity.tabla }}]
+    SET
+        {{- for i in 0..(param_campos.size - 1) }}
+        {{- campo = param_campos[i] }}
+        [{{ campo.nombre }}] = @{{ campo.nombre }}{{ if i < param_campos.size - 1 }},{{ end }}
+        {{- end }}
+    WHERE [{{ entity.primary_key.nombre ?? "Id" }}] = @Id;
+
+    SELECT @@ROWCOUNT AS RowsAffected;
+END
+GO
+
+-- ── sp_{{ entity.nombre }}_Delete ─────────────────────────────────────────
+IF OBJECT_ID(N'[{{ project.schema }}].[sp_{{ entity.nombre }}_Delete]', 'P') IS NOT NULL
+    DROP PROCEDURE [{{ project.schema }}].[sp_{{ entity.nombre }}_Delete];
+GO
+
+CREATE PROCEDURE [{{ project.schema }}].[sp_{{ entity.nombre }}_Delete]
+    @Id INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM [{{ project.schema }}].[{{ entity.tabla }}]
+    WHERE [{{ entity.primary_key.nombre ?? "Id" }}] = @Id;
+    SELECT @@ROWCOUNT AS RowsAffected;
+END
+GO
+
+PRINT 'Stored Procedures de {{ entity.nombre }} creados correctamente.';
+GO

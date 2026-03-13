@@ -1,0 +1,116 @@
+<div class="page-container">
+  <div class="page-header">
+    <h1 class="page-title">{{ "{{" }} pageTitle {{ "}}" }}</h1>
+    <button mat-stroked-button (click)="onCancel()">
+      <mat-icon>arrow_back</mat-icon>
+      Volver
+    </button>
+  </div>
+
+  <mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+
+  <mat-card class="form-card">
+    <mat-card-content>
+      <form [formGroup]="form" (ngSubmit)="onSubmit()">
+
+        {{- if entity.pantallas.formulario.secciones && entity.pantallas.formulario.secciones.size > 0 }}
+        {{- for seccion in entity.pantallas.formulario.secciones }}
+        <div class="form-section">
+          <h3 class="section-title">{{ seccion.titulo }}</h3>
+          <div class="form-grid cols-{{ seccion.columnas ?? 2 }}">
+            {{- for nombreCampo in seccion.campos }}
+            {{- campo = null }}
+            {{- for c in entity.campos }}{{- if c.nombre == nombreCampo }}{{- campo = c }}{{- end }}{{- end }}
+            {{- if campo && !campo.input.ocultar_en_formulario }}
+
+            {{- if campo.input.tipo == "checkbox" }}
+            <div class="form-field-full">
+              <mat-checkbox formControlName="{{ campo.nombre | to_camel_case }}" color="primary">
+                {{ campo.input.label ?? campo.nombre }}
+              </mat-checkbox>
+            </div>
+
+            {{- else if campo.input.tipo == "textarea" }}
+            <div class="form-field-full">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>{{ campo.input.label ?? campo.nombre }}{{ if campo.requerido }} *{{ end }}</mat-label>
+                <textarea matInput formControlName="{{ campo.nombre | to_camel_case }}"
+                          placeholder="{{ campo.input.placeholder ?? "" }}"
+                          rows="4"></textarea>
+                <mat-error *ngIf="hasError('{{ campo.nombre | to_camel_case }}', 'required')">{{ campo.nombre }} es requerido.</mat-error>
+                <mat-error *ngIf="hasError('{{ campo.nombre | to_camel_case }}', 'maxlength')">Excede la longitud máxima permitida.</mat-error>
+              </mat-form-field>
+            </div>
+
+            {{- else if campo.input.tipo == "datepicker" }}
+            <mat-form-field appearance="outline">
+              <mat-label>{{ campo.input.label ?? campo.nombre }}{{ if campo.requerido }} *{{ end }}</mat-label>
+              <input matInput [matDatepicker]="dp_{{ campo.nombre | to_camel_case }}"
+                     formControlName="{{ campo.nombre | to_camel_case }}"
+                     placeholder="{{ campo.input.placeholder ?? "dd/mm/aaaa" }}" />
+              <mat-datepicker-toggle matIconSuffix [for]="dp_{{ campo.nombre | to_camel_case }}"></mat-datepicker-toggle>
+              <mat-datepicker #dp_{{ campo.nombre | to_camel_case }}></mat-datepicker>
+              <mat-error *ngIf="hasError('{{ campo.nombre | to_camel_case }}', 'required')">{{ campo.nombre }} es requerido.</mat-error>
+            </mat-form-field>
+
+            {{- else if campo.input.tipo == "dropdown" }}
+            <mat-form-field appearance="outline">
+              <mat-label>{{ campo.input.label ?? campo.nombre }}{{ if campo.requerido }} *{{ end }}</mat-label>
+              <mat-select formControlName="{{ campo.nombre | to_camel_case }}">
+                <mat-option [value]="null" *ngIf="!{{ !campo.requerido }}">-- Ninguno --</mat-option>
+                <mat-option *ngFor="let opt of {{ campo.input.fuente_datos | to_camel_case }}Options" [value]="opt.id">
+                  {{ "{{" }} opt.{{ campo.input.campo_texto ?? "nombre" | to_camel_case }} {{ "}}" }}
+                </mat-option>
+              </mat-select>
+              <mat-error *ngIf="hasError('{{ campo.nombre | to_camel_case }}', 'required')">{{ campo.nombre }} es requerido.</mat-error>
+            </mat-form-field>
+
+            {{- else }}
+            <mat-form-field appearance="outline">
+              <mat-label>{{ campo.input.label ?? campo.nombre }}{{ if campo.requerido }} *{{ end }}</mat-label>
+              <input matInput
+                     formControlName="{{ campo.nombre | to_camel_case }}"
+                     type="{{ campo.input.tipo }}"
+                     placeholder="{{ campo.input.placeholder ?? "" }}"
+                     {{ if campo.input.solo_lectura }}readonly{{ end }} />
+              <mat-error *ngIf="hasError('{{ campo.nombre | to_camel_case }}', 'required')">{{ campo.nombre }} es requerido.</mat-error>
+              <mat-error *ngIf="hasError('{{ campo.nombre | to_camel_case }}', 'email')">El formato del email no es válido.</mat-error>
+              <mat-error *ngIf="hasError('{{ campo.nombre | to_camel_case }}', 'maxlength')">Excede la longitud máxima.</mat-error>
+              <mat-error *ngIf="hasError('{{ campo.nombre | to_camel_case }}', 'minlength')">No alcanza la longitud mínima.</mat-error>
+              <mat-error *ngIf="hasError('{{ campo.nombre | to_camel_case }}', 'pattern')">El formato no es válido.</mat-error>
+            </mat-form-field>
+            {{- end }}
+
+            {{- end }}
+            {{- end }}
+          </div>
+        </div>
+        {{- end }}
+        {{- else }}
+        <!-- Formulario sin secciones -->
+        <div class="form-grid cols-2">
+          {{- for campo in entity.campos }}
+          {{- if !campo.es_pk && !campo.input.ocultar_en_formulario }}
+          <mat-form-field appearance="outline">
+            <mat-label>{{ campo.input.label ?? campo.nombre }}</mat-label>
+            <input matInput formControlName="{{ campo.nombre | to_camel_case }}" type="{{ campo.input.tipo }}" />
+          </mat-form-field>
+          {{- end }}
+          {{- end }}
+        </div>
+        {{- end }}
+
+        <!-- Acciones del formulario -->
+        <div class="form-actions">
+          <button mat-stroked-button type="button" (click)="onCancel()" [disabled]="isSaving">
+            Cancelar
+          </button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="isSaving || isLoading">
+            <mat-icon>save</mat-icon>
+            {{ "{{" }} isSaving ? 'Guardando...' : (isEditMode ? 'Actualizar' : 'Guardar') {{ "}}" }}
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

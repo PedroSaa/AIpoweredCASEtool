@@ -1,0 +1,97 @@
+using Microsoft.EntityFrameworkCore;
+using {{ project.namespace }}.Data;
+using {{ project.namespace }}.Models;
+
+namespace {{ project.namespace }}.Repositories;
+
+/// <summary>Implementación del repositorio para {{ entity.nombre }} usando Entity Framework Core.</summary>
+public class {{ entity.nombre }}Repository : I{{ entity.nombre }}Repository
+{
+    private readonly ApplicationDbContext _context;
+
+    public {{ entity.nombre }}Repository(ApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<(IEnumerable<{{ entity.nombre }}> Items, int TotalCount)> GetAllAsync(
+        int page = 1,
+        int pageSize = 10,
+        string? search = null)
+    {
+        var query = _context.Set<{{ entity.nombre }}>()
+            {{- for rel in entity.relaciones }}
+            {{- if rel.tipo == "ManyToOne" }}
+            .Include(e => e.{{ rel.nombre_propiedad ?? rel.entidad }})
+            {{- end }}
+            {{- end }}
+            .AsQueryable();
+
+        {{- has_searchable = false }}
+        {{- for campo in entity.campos }}
+        {{- if campo.tipo == "string" && !campo.es_pk }}
+        {{- has_searchable = true }}
+        {{- end }}
+        {{- end }}
+        {{- if has_searchable }}
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(e =>
+                {{- is_first = true }}
+                {{- for campo in entity.campos }}
+                {{- if campo.tipo == "string" && !campo.es_pk }}
+                {{- if !is_first }} || {{ end }}
+                e.{{ campo.nombre }} != null && e.{{ campo.nombre }}.Contains(search)
+                {{- is_first = false }}
+                {{- end }}
+                {{- end }}
+            );
+        }
+        {{- end }}
+
+        var total = await query.CountAsync();
+        var items = await query
+            .OrderBy(e => EF.Property<object>(e, "{{ entity.pantallas.listado.ordenamiento ?? "Id" }}"))
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (items, total);
+    }
+
+    public async Task<{{ entity.nombre }}?> GetByIdAsync(int id)
+        => await _context.Set<{{ entity.nombre }}>()
+            {{- for rel in entity.relaciones }}
+            {{- if rel.tipo == "ManyToOne" }}
+            .Include(e => e.{{ rel.nombre_propiedad ?? rel.entidad }})
+            {{- end }}
+            {{- end }}
+            .FirstOrDefaultAsync(e => EF.Property<int>(e, "Id") == id);
+
+    public async Task<{{ entity.nombre }}> CreateAsync({{ entity.nombre }} entity)
+    {
+        _context.Set<{{ entity.nombre }}>().Add(entity);
+        await _context.SaveChangesAsync();
+        return entity;
+    }
+
+    public async Task<{{ entity.nombre }}> UpdateAsync({{ entity.nombre }} entity)
+    {
+        _context.Set<{{ entity.nombre }}>().Update(entity);
+        await _context.SaveChangesAsync();
+        return entity;
+    }
+
+    public async Task<bool> DeleteAsync(int id)
+    {
+        var entity = await _context.Set<{{ entity.nombre }}>().FindAsync(id);
+        if (entity == null) return false;
+        _context.Set<{{ entity.nombre }}>().Remove(entity);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> ExistsAsync(int id)
+        => await _context.Set<{{ entity.nombre }}>()
+            .AnyAsync(e => EF.Property<int>(e, "Id") == id);
+}

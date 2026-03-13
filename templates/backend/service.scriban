@@ -1,0 +1,105 @@
+using AutoMapper;
+using {{ project.namespace }}.DTOs;
+using {{ project.namespace }}.Models;
+using {{ project.namespace }}.Repositories;
+
+namespace {{ project.namespace }}.Services;
+
+/// <summary>
+/// Servicio de negocio para {{ entity.nombre }}.
+/// Implementa las reglas de negocio definidas en el modelo AICASE.
+/// </summary>
+public class {{ entity.nombre }}Service : I{{ entity.nombre }}Service
+{
+    private readonly I{{ entity.nombre }}Repository _repository;
+    private readonly IMapper _mapper;
+
+    public {{ entity.nombre }}Service(I{{ entity.nombre }}Repository repository, IMapper mapper)
+    {
+        _repository = repository;
+        _mapper = mapper;
+    }
+
+    public async Task<(IEnumerable<{{ entity.nombre }}ResponseDto> Items, int TotalCount)> GetAllAsync(
+        int page = 1, int pageSize = 10, string? search = null)
+    {
+        var (items, total) = await _repository.GetAllAsync(page, pageSize, search);
+        return (_mapper.Map<IEnumerable<{{ entity.nombre }}ResponseDto>>(items), total);
+    }
+
+    public async Task<{{ entity.nombre }}ResponseDto?> GetByIdAsync(int id)
+    {
+        var entity = await _repository.GetByIdAsync(id);
+        return entity == null ? null : _mapper.Map<{{ entity.nombre }}ResponseDto>(entity);
+    }
+
+    public async Task<{{ entity.nombre }}ResponseDto> CreateAsync({{ entity.nombre }}CreateDto dto)
+    {
+        {{- for regla in entity.reglas_negocio }}
+        {{- if regla.trigger == "antesDeInsertar" && regla.activa }}
+        await {{ regla.nombre }}Async(_mapper.Map<{{ entity.nombre }}>(dto));
+        {{- end }}
+        {{- end }}
+
+        var entity = _mapper.Map<{{ entity.nombre }}>(dto);
+        var created = await _repository.CreateAsync(entity);
+
+        {{- for regla in entity.reglas_negocio }}
+        {{- if regla.trigger == "despuesDeInsertar" && regla.activa }}
+        await {{ regla.nombre }}PostAsync(created);
+        {{- end }}
+        {{- end }}
+
+        return _mapper.Map<{{ entity.nombre }}ResponseDto>(created);
+    }
+
+    public async Task<{{ entity.nombre }}ResponseDto?> UpdateAsync(int id, {{ entity.nombre }}UpdateDto dto)
+    {
+        if (!await _repository.ExistsAsync(id)) return null;
+
+        {{- for regla in entity.reglas_negocio }}
+        {{- if regla.trigger == "antesDeActualizar" && regla.activa }}
+        await {{ regla.nombre }}Async(_mapper.Map<{{ entity.nombre }}>(dto));
+        {{- end }}
+        {{- end }}
+
+        var entity = _mapper.Map<{{ entity.nombre }}>(dto);
+        var updated = await _repository.UpdateAsync(entity);
+        return _mapper.Map<{{ entity.nombre }}ResponseDto>(updated);
+    }
+
+    public async Task<bool> DeleteAsync(int id)
+    {
+        {{- for regla in entity.reglas_negocio }}
+        {{- if regla.trigger == "antesDeEliminar" && regla.activa }}
+        var entityToDelete = await _repository.GetByIdAsync(id);
+        if (entityToDelete != null)
+            await {{ regla.nombre }}Async(entityToDelete);
+        {{- end }}
+        {{- end }}
+
+        return await _repository.DeleteAsync(id);
+    }
+
+    // ── Stubs de Reglas de Negocio ───────────────────────────────────────────
+    {{- for regla in entity.reglas_negocio }}
+    {{- if regla.activa }}
+
+    /// <summary>
+    /// Regla: {{ regla.nombre }}
+    /// Trigger: {{ regla.trigger }}
+    /// Condición: {{ regla.condicion }}
+    /// Acción: {{ regla.accion }}
+    /// </summary>
+    protected virtual async Task {{ regla.nombre }}Async({{ entity.nombre }} entity)
+    {
+        // TODO: Implementar regla de negocio "{{ regla.nombre }}"
+        // Condición: {{ regla.condicion }}
+        // Si la condición es verdadera, ejecutar: {{ regla.accion }}
+        // Mensaje de error: {{ regla.mensaje }}
+        // throw new InvalidOperationException("{{ regla.mensaje }}");
+        await Task.CompletedTask;
+    }
+    {{- end }}
+    {{- end }}
+}

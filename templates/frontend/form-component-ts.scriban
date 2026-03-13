@@ -1,0 +1,117 @@
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { {{ entity.nombre }}Service } from '../../../services/{{ entity.nombre | to_kebab_case }}.service';
+{{- for rel in entity.relaciones }}
+{{- if rel.tipo == "ManyToOne" }}
+import { {{ rel.entidad }}Service } from '../../../services/{{ rel.entidad | to_kebab_case }}.service';
+import { {{ rel.entidad }} } from '../../../models/{{ rel.entidad | to_kebab_case }}.model';
+{{- end }}
+{{- end }}
+
+@Component({
+  selector: 'app-{{ entity.nombre | to_kebab_case }}-form',
+  templateUrl: './{{ entity.nombre | to_kebab_case }}-form.component.html'
+})
+export class {{ entity.nombre }}FormComponent implements OnInit {
+  form!: FormGroup;
+  isEditMode = false;
+  isLoading = false;
+  isSaving = false;
+  recordId = 0;
+  pageTitle = '';
+
+  {{- for rel in entity.relaciones }}
+  {{- if rel.tipo == "ManyToOne" }}
+  {{ rel.entidad | to_camel_case }}Options: {{ rel.entidad }}[] = [];
+  {{- end }}
+  {{- end }}
+
+  constructor(
+    private fb: FormBuilder,
+    private service: {{ entity.nombre }}Service,
+    private route: ActivatedRoute,
+    private router: Router,
+    private snackBar: MatSnackBar
+    {{- for rel in entity.relaciones }}
+    {{- if rel.tipo == "ManyToOne" }},
+    private {{ rel.entidad | to_camel_case }}Service: {{ rel.entidad }}Service
+    {{- end }}
+    {{- end }}
+  ) {}
+
+  ngOnInit(): void {
+    this.buildForm();
+    this.loadDropdowns();
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id && id !== 'new') {
+      this.isEditMode = true;
+      this.recordId = +id;
+      this.pageTitle = 'Editar {{ entity.nombre }}';
+      this.loadRecord(this.recordId);
+    } else {
+      this.pageTitle = 'Nuevo {{ entity.nombre }}';
+    }
+  }
+
+  buildForm(): void {
+    this.form = this.fb.group({
+      {{- for campo in entity.campos }}
+      {{- if !campo.es_pk }}
+      {{ campo.nombre | to_camel_case }}: [{{ if campo.tipo == "bool" }}false{{ else }}null{{ end }}, [{{ if campo.requerido }}Validators.required{{ end }}]],
+      {{- end }}
+      {{- end }}
+    });
+  }
+
+  loadDropdowns(): void {
+    {{- for rel in entity.relaciones }}
+    {{- if rel.tipo == "ManyToOne" }}
+    this.{{ rel.entidad | to_camel_case }}Service.getAll(1, 1000).subscribe({
+      next: (result) => this.{{ rel.entidad | to_camel_case }}Options = result.items,
+      error: () => this.snackBar.open('Error cargando {{ rel.entidad }}s.', 'Cerrar', { duration: 2000 })
+    });
+    {{- end }}
+    {{- end }}
+  }
+
+  loadRecord(id: number): void {
+    this.isLoading = true;
+    this.service.getById(id).subscribe({
+      next: (data) => { this.form.patchValue(data); this.isLoading = false; },
+      error: () => {
+        this.snackBar.open('Error al cargar el registro.', 'Cerrar', { duration: 3000 });
+        this.isLoading = false;
+      }
+    });
+  }
+
+  onSubmit(): void {
+    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+    this.isSaving = true;
+    const value = this.form.value;
+    const obs = (this.isEditMode && this.recordId > 0)
+      ? this.service.update(this.recordId, { id: this.recordId, ...value })
+      : this.service.create(value);
+    obs.subscribe({
+      next: () => {
+        this.snackBar.open('Guardado correctamente.', 'Cerrar', { duration: 3000 });
+        this.router.navigate(['/{{ entity.nombre | to_kebab_case }}s']);
+      },
+      error: (err: any) => {
+        this.snackBar.open(err?.error?.message ?? 'Error al guardar.', 'Cerrar', { duration: 4000 });
+        this.isSaving = false;
+      }
+    });
+  }
+
+  onCancel(): void {
+    this.router.navigate(['/{{ entity.nombre | to_kebab_case }}s']);
+  }
+
+  hasError(field: string, error: string): boolean {
+    const ctrl = this.form.get(field);
+    return !!(ctrl && ctrl.touched && ctrl.hasError(error));
+  }
+}

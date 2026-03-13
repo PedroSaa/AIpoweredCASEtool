@@ -1,0 +1,25 @@
+using {{ project.namespace }}.DTOs;
+
+namespace {{ project.namespace }}.Services;
+
+/// <summary>Interfaz del servicio de negocio para {{ entity.nombre }}.</summary>
+public interface I{{ entity.nombre }}Service
+{
+    /// <summary>Obtiene todos los registros con paginación.</summary>
+    Task<(IEnumerable<{{ entity.nombre }}ResponseDto> Items, int TotalCount)> GetAllAsync(
+        int page = 1,
+        int pageSize = 10,
+        string? search = null);
+
+    /// <summary>Obtiene un registro por su Id.</summary>
+    Task<{{ entity.nombre }}ResponseDto?> GetByIdAsync(int id);
+
+    /// <summary>Crea un nuevo {{ entity.nombre }} aplicando reglas de negocio.</summary>
+    Task<{{ entity.nombre }}ResponseDto> CreateAsync({{ entity.nombre }}CreateDto dto);
+
+    /// <summary>Actualiza un {{ entity.nombre }} existente.</summary>
+    Task<{{ entity.nombre }}ResponseDto?> UpdateAsync(int id, {{ entity.nombre }}UpdateDto dto);
+
+    /// <summary>Elimina un {{ entity.nombre }} por su Id.</summary>
+    Task<bool> DeleteAsync(int id);
+}

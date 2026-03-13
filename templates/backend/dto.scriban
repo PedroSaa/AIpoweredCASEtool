@@ -1,0 +1,44 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace {{ project.namespace }}.DTOs;
+
+/// <summary>DTO para crear un nuevo {{ entity.nombre }}.</summary>
+public class {{ entity.nombre }}CreateDto
+{
+    {{- for campo in entity.campos }}
+    {{- if !campo.es_pk }}
+    {{- if campo.requerido }}
+    [Required(ErrorMessage = "{{ campo.nombre }} es requerido.")]
+    {{- end }}
+    {{- if campo.largo && campo.largo > 0 }}
+    [MaxLength({{ campo.largo }}, ErrorMessage = "{{ campo.nombre }} no puede superar {{ campo.largo }} caracteres.")]
+    {{- end }}
+    {{- for validacion in campo.validaciones }}
+    {{- if validacion.tipo == "email" }}
+    [EmailAddress(ErrorMessage = "{{ validacion.mensaje ?? "El formato del email no es válido." }}")]
+    {{- end }}
+    {{- if validacion.tipo == "regex" }}
+    [RegularExpression(@"{{ validacion.valor }}", ErrorMessage = "{{ validacion.mensaje ?? "Formato inválido." }}")]
+    {{- end }}
+    {{- end }}
+    public {{ campo.tipo | csharp_type }}{{ if !campo.requerido }}?{{ end }} {{ campo.nombre }} { get; set; }
+
+    {{- end }}
+    {{- end }}
+}
+
+/// <summary>DTO para actualizar un {{ entity.nombre }} existente.</summary>
+public class {{ entity.nombre }}UpdateDto : {{ entity.nombre }}CreateDto
+{
+    [Required]
+    public int Id { get; set; }
+}
+
+/// <summary>DTO de respuesta con todos los campos de {{ entity.nombre }}.</summary>
+public class {{ entity.nombre }}ResponseDto
+{
+    {{- for campo in entity.campos }}
+    public {{ campo.tipo | csharp_type }}{{ if !campo.requerido && !campo.es_pk }}?{{ end }} {{ campo.nombre }} { get; set; }
+
+    {{- end }}
+}

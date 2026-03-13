@@ -1,0 +1,94 @@
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { MatPaginator, PageEvent } from '@angular/material/paginator';
+import { MatSort } from '@angular/material/sort';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { Router } from '@angular/router';
+import { {{ entity.nombre }} } from '../../../models/{{ entity.nombre | to_kebab_case }}.model';
+import { {{ entity.nombre }}Service } from '../../../services/{{ entity.nombre | to_kebab_case }}.service';
+
+@Component({
+  selector: 'app-{{ entity.nombre | to_kebab_case }}-list',
+  templateUrl: './{{ entity.nombre | to_kebab_case }}-list.component.html'
+})
+export class {{ entity.nombre }}ListComponent implements OnInit {
+  items: {{ entity.nombre }}[] = [];
+  totalCount = 0;
+  page = 1;
+  pageSize = {{ entity.pantallas.listado.paginacion.registros_por_pagina ?? 10 }};
+  isLoading = false;
+  searchTerm = '';
+  filters: Record<string, string> = {};
+
+  displayedColumns: string[] = [
+    {{- for col in entity.pantallas.listado.columnas }}
+    '{{ col | to_camel_case }}',
+    {{- end }}
+    'acciones'
+  ];
+
+  {{- psize_opts = entity.pantallas.listado.paginacion.opciones_tamano ?? [10, 25, 50, 100] }}
+  pageSizeOptions = [{{ array.join psize_opts ", " }}];
+
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatSort) sort!: MatSort;
+
+  constructor(
+    private service: {{ entity.nombre }}Service,
+    private router: Router,
+    private snackBar: MatSnackBar
+  ) {}
+
+  ngOnInit(): void {
+    this.loadData();
+  }
+
+  loadData(): void {
+    this.isLoading = true;
+    const activeFilters = this.searchTerm
+      ? { search: this.searchTerm }
+      : this.filters;
+
+    this.service.getAll(this.page, this.pageSize, activeFilters).subscribe({
+      next: (result) => {
+        this.items = result.items;
+        this.totalCount = result.totalCount;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.snackBar.open('Error al cargar los registros.', 'Cerrar', { duration: 3000 });
+        this.isLoading = false;
+      }
+    });
+  }
+
+  onSearch(): void {
+    this.page = 1;
+    this.loadData();
+  }
+
+  onPageChange(event: PageEvent): void {
+    this.page = event.pageIndex + 1;
+    this.pageSize = event.pageSize;
+    this.loadData();
+  }
+
+  onNew(): void {
+    this.router.navigate(['/{{ entity.nombre | to_kebab_case }}s', 'new']);
+  }
+
+  onEdit(id: number): void {
+    this.router.navigate(['/{{ entity.nombre | to_kebab_case }}s', id, 'edit']);
+  }
+
+  onDelete(id: number): void {
+    if (!confirm('¿Está seguro de que desea eliminar este registro?')) return;
+
+    this.service.delete(id).subscribe({
+      next: () => {
+        this.snackBar.open('Registro eliminado correctamente.', 'Cerrar', { duration: 3000 });
+        this.loadData();
+      },
+      error: () => this.snackBar.open('Error al eliminar el registro.', 'Cerrar', { duration: 3000 })
+    });
+  }
+}

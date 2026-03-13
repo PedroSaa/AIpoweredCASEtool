@@ -1,0 +1,40 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace {{ project.namespace }}.Models;
+
+/// <summary>{{ entity.descripcion }}</summary>
+[Table("{{ entity.tabla }}")]
+public class {{ entity.nombre }}
+{
+    {{- for campo in entity.campos }}
+    {{- if campo.es_pk }}
+    [Key]
+    {{- if campo.auto_incremento }}
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    {{- end }}
+    {{- end }}
+    {{- if campo.requerido && !campo.es_pk }}
+    [Required]
+    {{- end }}
+    {{- if campo.largo && campo.largo > 0 }}
+    [MaxLength({{ campo.largo }})]
+    {{- end }}
+    {{- if campo.unico }}
+    // [Index(IsUnique = true)] - Configurado en ApplicationDbContext
+    {{- end }}
+    public {{ campo.tipo | csharp_type }}{{ if !campo.requerido && !campo.es_pk }}?{{ end }} {{ campo.nombre }} { get; set; }
+
+    {{- end }}
+    {{- for rel in entity.relaciones }}
+    {{- if rel.tipo == "ManyToOne" }}
+    [ForeignKey("{{ rel.campo ?? rel.entidad + "Id" }}")]
+    public virtual {{ rel.entidad }}? {{ rel.nombre_propiedad ?? rel.entidad }} { get; set; }
+
+    {{- end }}
+    {{- if rel.tipo == "OneToMany" }}
+    public virtual ICollection<{{ rel.entidad }}> {{ rel.nombre_propiedad ?? rel.entidad + "s" }} { get; set; } = new List<{{ rel.entidad }}>();
+
+    {{- end }}
+    {{- end }}
+}

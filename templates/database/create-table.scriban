@@ -1,0 +1,90 @@
+-- ============================================================
+-- Tabla: [{{ project.schema }}].[{{ entity.tabla }}]
+-- Entidad: {{ entity.nombre }}
+-- Proyecto: {{ project.nombre }} v{{ project.version }}
+-- Generado por AICASE
+-- ============================================================
+IF NOT EXISTS (
+    SELECT * FROM sys.objects
+    WHERE object_id = OBJECT_ID(N'[{{ project.schema }}].[{{ entity.tabla }}]')
+      AND type IN (N'U')
+)
+BEGIN
+    CREATE TABLE [{{ project.schema }}].[{{ entity.tabla }}] (
+        {{- for i in 0..(entity.campos.size - 1) }}
+        {{- campo = entity.campos[i] }}
+        {{- is_last = i == entity.campos.size - 1 }}
+        {{- tipo_sql = campo.tipo | sql_type campo.largo campo.precision campo.escala }}
+        [{{ campo.nombre }}] {{ tipo_sql }}
+        {{- if campo.es_pk }} NOT NULL{{ if campo.auto_incremento }} IDENTITY(1,1){{ end }}
+        {{- else if campo.requerido }} NOT NULL
+        {{- else }} NULL
+        {{- end }}
+        {{- if campo.tipo == "bool" && campo.valor_por_defecto != null }} DEFAULT({{ if campo.valor_por_defecto }}1{{ else }}0{{ end }}){{ end }}
+        {{- if !is_last }},{{ end }}
+        {{- end }}
+    );
+
+    PRINT 'Tabla [{{ project.schema }}].[{{ entity.tabla }}] creada.';
+END
+ELSE
+BEGIN
+    PRINT 'Tabla [{{ project.schema }}].[{{ entity.tabla }}] ya existe. Omitiendo creación.';
+END
+GO
+
+-- Clave primaria
+{{- for campo in entity.campos }}
+{{- if campo.es_pk }}
+IF NOT EXISTS (
+    SELECT * FROM sys.indexes
+    WHERE name = 'PK_{{ entity.tabla }}'
+      AND object_id = OBJECT_ID('[{{ project.schema }}].[{{ entity.tabla }}]')
+)
+BEGIN
+    ALTER TABLE [{{ project.schema }}].[{{ entity.tabla }}]
+        ADD CONSTRAINT [PK_{{ entity.tabla }}]
+        PRIMARY KEY CLUSTERED ([{{ campo.nombre }}] ASC);
+    PRINT 'PK_{{ entity.tabla }} creada.';
+END
+GO
+{{- end }}
+{{- end }}
+
+-- Índices únicos
+{{- for campo in entity.campos }}
+{{- if campo.unico && !campo.es_pk }}
+IF NOT EXISTS (
+    SELECT * FROM sys.indexes
+    WHERE name = 'UQ_{{ entity.tabla }}_{{ campo.nombre }}'
+      AND object_id = OBJECT_ID('[{{ project.schema }}].[{{ entity.tabla }}]')
+)
+BEGIN
+    CREATE UNIQUE NONCLUSTERED INDEX [UQ_{{ entity.tabla }}_{{ campo.nombre }}]
+        ON [{{ project.schema }}].[{{ entity.tabla }}] ([{{ campo.nombre }}] ASC)
+        WHERE ([{{ campo.nombre }}] IS NOT NULL);
+    PRINT 'Índice único UQ_{{ entity.tabla }}_{{ campo.nombre }} creado.';
+END
+GO
+{{- end }}
+{{- end }}
+
+-- Claves foráneas
+{{- for rel in entity.relaciones }}
+{{- if rel.tipo == "ManyToOne" }}
+IF NOT EXISTS (
+    SELECT * FROM sys.foreign_keys
+    WHERE name = 'FK_{{ entity.tabla }}_{{ rel.entidad }}'
+      AND parent_object_id = OBJECT_ID('[{{ project.schema }}].[{{ entity.tabla }}]')
+)
+BEGIN
+    ALTER TABLE [{{ project.schema }}].[{{ entity.tabla }}]
+        ADD CONSTRAINT [FK_{{ entity.tabla }}_{{ rel.entidad }}]
+        FOREIGN KEY ([{{ rel.entidad }}Id])
+        REFERENCES [{{ project.schema }}].[{{ rel.entidad }}s] ([{{ rel.campo ?? "Id" }}])
+        ON DELETE {{ if rel.cascada }}CASCADE{{ else }}RESTRICT{{ end }};
+    PRINT 'FK_{{ entity.tabla }}_{{ rel.entidad }} creada.';
+END
+GO
+{{- end }}
+{{- end }}

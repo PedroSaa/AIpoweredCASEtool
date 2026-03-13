@@ -1,0 +1,28 @@
+using {{ project.namespace }}.Models;
+
+namespace {{ project.namespace }}.Repositories;
+
+/// <summary>Interfaz de repositorio para la entidad {{ entity.nombre }}.</summary>
+public interface I{{ entity.nombre }}Repository
+{
+    /// <summary>Obtiene todos los registros con paginación opcional.</summary>
+    Task<(IEnumerable<{{ entity.nombre }}> Items, int TotalCount)> GetAllAsync(
+        int page = 1,
+        int pageSize = 10,
+        string? search = null);
+
+    /// <summary>Obtiene un registro por su clave primaria.</summary>
+    Task<{{ entity.nombre }}?> GetByIdAsync(int id);
+
+    /// <summary>Inserta un nuevo registro y retorna la entidad creada.</summary>
+    Task<{{ entity.nombre }}> CreateAsync({{ entity.nombre }} entity);
+
+    /// <summary>Actualiza un registro existente y retorna la entidad actualizada.</summary>
+    Task<{{ entity.nombre }}> UpdateAsync({{ entity.nombre }} entity);
+
+    /// <summary>Elimina un registro por su clave primaria.</summary>
+    Task<bool> DeleteAsync(int id);
+
+    /// <summary>Verifica si existe un registro con el Id dado.</summary>
+    Task<bool> ExistsAsync(int id);
+}

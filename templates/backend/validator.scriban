@@ -1,0 +1,82 @@
+using FluentValidation;
+using {{ project.namespace }}.DTOs;
+
+namespace {{ project.namespace }}.Validators;
+
+/// <summary>Validador FluentValidation para {{ entity.nombre }}CreateDto.</summary>
+public class {{ entity.nombre }}CreateValidator : AbstractValidator<{{ entity.nombre }}CreateDto>
+{
+    public {{ entity.nombre }}CreateValidator()
+    {
+        {{- for campo in entity.campos }}
+        {{- if !campo.es_pk }}
+        {{- if campo.requerido }}
+        RuleFor(x => x.{{ campo.nombre }})
+            .NotEmpty().WithMessage("{{ campo.nombre }} es requerido.");
+
+        {{- end }}
+        {{- for validacion in campo.validaciones }}
+        {{- if validacion.tipo == "minLength" }}
+        RuleFor(x => x.{{ campo.nombre }})
+            .MinimumLength({{ validacion.valor }})
+            .WithMessage("{{ validacion.mensaje ?? campo.nombre + ": mínimo " + validacion.valor + " caracteres." }}");
+
+        {{- end }}
+        {{- if validacion.tipo == "maxLength" }}
+        RuleFor(x => x.{{ campo.nombre }})
+            .MaximumLength({{ validacion.valor }})
+            .WithMessage("{{ validacion.mensaje ?? campo.nombre + ": máximo " + validacion.valor + " caracteres." }}");
+
+        {{- end }}
+        {{- if validacion.tipo == "email" }}
+        RuleFor(x => x.{{ campo.nombre }})
+            .EmailAddress()
+            .WithMessage("{{ validacion.mensaje ?? "El formato del email no es válido." }}");
+
+        {{- end }}
+        {{- if validacion.tipo == "min" }}
+        RuleFor(x => x.{{ campo.nombre }})
+            .GreaterThanOrEqualTo({{ validacion.valor }})
+            .WithMessage("{{ validacion.mensaje ?? campo.nombre + " debe ser >= " + validacion.valor }}");
+
+        {{- end }}
+        {{- if validacion.tipo == "max" }}
+        RuleFor(x => x.{{ campo.nombre }})
+            .LessThanOrEqualTo({{ validacion.valor }})
+            .WithMessage("{{ validacion.mensaje ?? campo.nombre + " debe ser <= " + validacion.valor }}");
+
+        {{- end }}
+        {{- if validacion.tipo == "regex" }}
+        RuleFor(x => x.{{ campo.nombre }})
+            .Matches(@"{{ validacion.valor }}")
+            .WithMessage("{{ validacion.mensaje ?? "El formato de " + campo.nombre + " no es válido." }}");
+
+        {{- end }}
+        {{- if validacion.tipo == "fechaMaxima" }}
+        RuleFor(x => x.{{ campo.nombre }})
+            .LessThanOrEqualTo(DateTime.Today)
+            .WithMessage("{{ validacion.mensaje ?? campo.nombre + " no puede ser fecha futura." }}");
+
+        {{- end }}
+        {{- if validacion.tipo == "fechaMinima" }}
+        RuleFor(x => x.{{ campo.nombre }})
+            .GreaterThanOrEqualTo(DateTime.Parse("{{ validacion.valor }}"))
+            .WithMessage("{{ validacion.mensaje ?? campo.nombre + " es anterior a la fecha mínima permitida." }}");
+
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+    }
+}
+
+/// <summary>Validador FluentValidation para {{ entity.nombre }}UpdateDto.</summary>
+public class {{ entity.nombre }}UpdateValidator : {{ entity.nombre }}CreateValidator
+{
+    public {{ entity.nombre }}UpdateValidator()
+    {
+        RuleFor(x => x.Id)
+            .GreaterThan(0)
+            .WithMessage("Id debe ser un valor positivo.");
+    }
+}
