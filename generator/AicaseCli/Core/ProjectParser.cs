@@ -33,7 +33,7 @@ public class ProjectParser
             project.Technologies = new TechnologyStack
             {
                 Backend = tech["backend"]?.ToString() ?? "C# .NET 8 Web API",
-                Frontend = tech["frontend"]?.ToString() ?? "Angular 17",
+                Frontend = tech["frontend"]?.ToString() ?? "Angular 19",
                 Database = tech["database"]?.ToString() ?? "SQL Server"
             };
         }

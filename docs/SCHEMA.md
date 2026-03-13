@@ -52,7 +52,7 @@ El schema sigue el estándar **JSON Schema Draft-07**.
   "version": "1.0",
   "tecnologias": {
     "backend": "C# .NET 8 Web API",
-    "frontend": "Angular 17",
+    "frontend": "Angular 19",
     "database": "SQL Server"
   },
   "entidades": [ ... ]
@@ -68,7 +68,7 @@ Define el stack tecnológico del proyecto generado.
 | Propiedad | Tipo | Requerido | Descripción |
 |-----------|------|-----------|-------------|
 | `backend` | string | ✅ | Tecnología backend (ej: `"C# .NET 8 Web API"`) |
-| `frontend` | string | ✅ | Tecnología frontend (ej: `"Angular 17"`) |
+| `frontend` | string | ✅ | Tecnología frontend (ej: `"Angular 19"`) |
 | `database` | string | ✅ | Motor de base de datos (ej: `"SQL Server"`) |
 
 ---

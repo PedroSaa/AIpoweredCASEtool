@@ -107,7 +107,7 @@ rootCommand.SetHandler(async (input, output, schema) =>
         totalFiles += backendFiles;
 
         // Frontend (Angular)
-        Console.WriteLine("🅰️  Generando frontend (Angular 17)...");
+        Console.WriteLine("🅰️  Generando frontend (Angular 19)...");
         var frontendGenerator = new FrontendGenerator(templateEngine, output.FullName);
         int frontendFiles = await frontendGenerator.GenerateAsync(project);
         Console.ForegroundColor = ConsoleColor.Green;

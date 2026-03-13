@@ -4,7 +4,7 @@
   "descripcion": "Sistema de gestión de ventas con clientes, tipos de cliente y productos",
   "tecnologias": {
     "backend": "C# .NET 8 Web API",
-    "frontend": "Angular 17",
+    "frontend": "Angular 19",
     "database": "SQL Server"
   },
   "configuracionGlobal": {

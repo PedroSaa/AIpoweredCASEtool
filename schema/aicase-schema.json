@@ -31,7 +31,7 @@
         },
         "frontend": {
           "type": "string",
-          "description": "Tecnología frontend (ej: Angular 17)"
+          "description": "Tecnología frontend (ej: Angular 19)"
         },
         "database": {
           "type": "string",

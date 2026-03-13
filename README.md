@@ -20,7 +20,7 @@ Dado un JSON con la definición completa del proyecto (entidades, campos, valida
 | Capa | Tecnología | Artefactos |
 |------|-----------|------------|
 | Backend | C# .NET 8 Web API | Modelos, DTOs, Repositorios, Servicios, Controladores, Validadores (FluentValidation), DbContext |
-| Frontend | Angular 17 | Interfaces TypeScript, Services, Componentes Listado y Formulario, Routing |
+| Frontend | Angular 19 | Interfaces TypeScript, Services, Componentes Listado y Formulario, Routing |
 | Base de Datos | SQL Server | CREATE TABLE, Stored Procedures CRUD (opcional) |
 
 ---
@@ -50,7 +50,7 @@ AIpoweredCASEtool/
 │   │   ├── Services/        (README)
 │   │   ├── Controllers/    (README)
 │   │   └── Validators/     (README)
-│   └── frontend/                       # Angular 17 base
+│   └── frontend/                       # Angular 19 base
 │       ├── angular.json
 │       ├── package.json
 │       └── src/
@@ -166,7 +166,7 @@ dotnet run --project generator/AicaseCli -- \
 ```
 output/
 ├── backend/          ← Proyecto C# .NET 8
-├── frontend/         ← Proyecto Angular 17
+├── frontend/         ← Proyecto Angular 19
 └── database/         ← Scripts SQL Server
 ```
 

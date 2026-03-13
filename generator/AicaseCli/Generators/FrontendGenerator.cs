@@ -4,7 +4,7 @@ using AicaseCli.Models;
 namespace AicaseCli.Generators;
 
 /// <summary>
-/// Genera todo el código Angular 17 para el proyecto.
+/// Genera todo el código Angular 19 para el proyecto.
 /// </summary>
 public class FrontendGenerator
 {

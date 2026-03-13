@@ -22,7 +22,7 @@ public class ProjectDefinition
 public class TechnologyStack
 {
     public string Backend { get; set; } = "C# .NET 8 Web API";
-    public string Frontend { get; set; } = "Angular 17";
+    public string Frontend { get; set; } = "Angular 19";
     public string Database { get; set; } = "SQL Server";
 }
 
