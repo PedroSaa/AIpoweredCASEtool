@@ -1,0 +1,21 @@
+using {{ project.csharpnamespace }}.Models;
+
+namespace {{ project.csharpnamespace }}.Repositories;
+
+/// <summary>
+/// Interfaz del repositorio para {{ entity.name }}
+/// </summary>
+public interface I{{ entity.name }}Repository
+{
+    Task<IEnumerable<{{ entity.name }}>> GetAllAsync(int page = 1, int pageSize = 10, string? orderBy = null, bool orderDesc = false);
+    Task<int> GetTotalCountAsync();
+    Task<{{ entity.name }}?> GetByIdAsync({{ entity.primarykey?.csharptype ?? "int" }} id);
+    Task<{{ entity.name }}> CreateAsync({{ entity.name }} entity);
+    Task<{{ entity.name }}> UpdateAsync({{ entity.name }} entity);
+    Task<bool> DeleteAsync({{ entity.primarykey?.csharptype ?? "int" }} id);
+    {{- for field in entity.fields }}
+    {{- if field.isunique && !field.ispk }}
+    Task<bool> ExistsByAsync(string fieldName, {{ field.csharptype }} value, {{ entity.primarykey?.csharptype ?? "int" }}? excludeId = null);
+    {{- end }}
+    {{- end }}
+}

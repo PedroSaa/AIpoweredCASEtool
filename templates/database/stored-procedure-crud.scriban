@@ -1,0 +1,148 @@
+-- ============================================================
+-- Stored Procedures CRUD: {{ entity.tablename }}
+-- Generado por AICASE
+-- ============================================================
+
+USE [{{ project.globalconfig?.databaseconfig?.databasename ?? project.name + "DB" }}];
+GO
+
+-- ─── SP_GetAll_{{ entity.tablename }} ────────────────────────────────────────────────
+IF OBJECT_ID('{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}.SP_GetAll_{{ entity.tablename }}', 'P') IS NOT NULL
+    DROP PROCEDURE [{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}].[SP_GetAll_{{ entity.tablename }}];
+GO
+
+CREATE PROCEDURE [{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}].[SP_GetAll_{{ entity.tablename }}]
+    @Page       INT = 1,
+    @PageSize   INT = 10,
+    @OrderBy    NVARCHAR(50) = '{{ entity.primarykey?.name ?? "Id" }}',
+    @OrderDesc  BIT = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @Offset INT = (@Page - 1) * @PageSize;
+    DECLARE @TotalCount INT;
+
+    SELECT @TotalCount = COUNT(*) FROM [{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}].[{{ entity.tablename }}];
+
+    SELECT
+        {{- for field in entity.fields }}
+        {{- is_last = for.last }}
+        [{{ field.name }}]{{ if !is_last }},{{ end }}
+        {{- end }}
+        ,@TotalCount AS TotalCount
+    FROM [{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}].[{{ entity.tablename }}]
+    ORDER BY [{{ entity.primarykey?.name ?? "Id" }}]
+    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
+END
+GO
+
+-- ─── SP_GetById_{{ entity.tablename }} ──────────────────────────────────────────────
+IF OBJECT_ID('{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}.SP_GetById_{{ entity.tablename }}', 'P') IS NOT NULL
+    DROP PROCEDURE [{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}].[SP_GetById_{{ entity.tablename }}];
+GO
+
+CREATE PROCEDURE [{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}].[SP_GetById_{{ entity.tablename }}]
+    @Id {{ entity.primarykey?.sqltype ?? "INT" }}
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT
+        {{- for field in entity.fields }}
+        {{- is_last = for.last }}
+        [{{ field.name }}]{{ if !is_last }},{{ end }}
+        {{- end }}
+    FROM [{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}].[{{ entity.tablename }}]
+    WHERE [{{ entity.primarykey?.name ?? "Id" }}] = @Id;
+END
+GO
+
+-- ─── SP_Insert_{{ entity.tablename }} ───────────────────────────────────────────────
+IF OBJECT_ID('{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}.SP_Insert_{{ entity.tablename }}', 'P') IS NOT NULL
+    DROP PROCEDURE [{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}].[SP_Insert_{{ entity.tablename }}];
+GO
+
+CREATE PROCEDURE [{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}].[SP_Insert_{{ entity.tablename }}]
+    {{- for field in entity.fields }}
+    {{- if !field.ispk || !field.autoincrement }}
+    @{{ field.name }} {{ field.sqltype }}{{ if field.isrequired == false }} = NULL{{ end }},
+    {{- end }}
+    {{- end }}
+    @NewId {{ entity.primarykey?.sqltype ?? "INT" }} OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO [{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}].[{{ entity.tablename }}] (
+        {{- for field in entity.fields }}
+        {{- if !field.ispk || !field.autoincrement }}
+        {{- is_last = for.last }}
+        [{{ field.name }}]{{ if !is_last }},{{ end }}
+        {{- end }}
+        {{- end }}
+    )
+    VALUES (
+        {{- for field in entity.fields }}
+        {{- if !field.ispk || !field.autoincrement }}
+        {{- is_last = for.last }}
+        @{{ field.name }}{{ if !is_last }},{{ end }}
+        {{- end }}
+        {{- end }}
+    );
+
+    SET @NewId = SCOPE_IDENTITY();
+END
+GO
+
+-- ─── SP_Update_{{ entity.tablename }} ───────────────────────────────────────────────
+IF OBJECT_ID('{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}.SP_Update_{{ entity.tablename }}', 'P') IS NOT NULL
+    DROP PROCEDURE [{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}].[SP_Update_{{ entity.tablename }}];
+GO
+
+CREATE PROCEDURE [{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}].[SP_Update_{{ entity.tablename }}]
+    @{{ entity.primarykey?.name ?? "Id" }} {{ entity.primarykey?.sqltype ?? "INT" }},
+    {{- for field in entity.fields }}
+    {{- if !field.ispk }}
+    @{{ field.name }} {{ field.sqltype }}{{ if !field.isrequired }} = NULL{{ end }},
+    {{- end }}
+    {{- end }}
+    @RowsAffected INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE [{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}].[{{ entity.tablename }}]
+    SET
+        {{- for field in entity.fields }}
+        {{- if !field.ispk }}
+        {{- is_last = for.last }}
+        [{{ field.name }}] = @{{ field.name }}{{ if !is_last }},{{ end }}
+        {{- end }}
+        {{- end }}
+    WHERE [{{ entity.primarykey?.name ?? "Id" }}] = @{{ entity.primarykey?.name ?? "Id" }};
+
+    SET @RowsAffected = @@ROWCOUNT;
+END
+GO
+
+-- ─── SP_Delete_{{ entity.tablename }} ───────────────────────────────────────────────
+IF OBJECT_ID('{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}.SP_Delete_{{ entity.tablename }}', 'P') IS NOT NULL
+    DROP PROCEDURE [{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}].[SP_Delete_{{ entity.tablename }}];
+GO
+
+CREATE PROCEDURE [{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}].[SP_Delete_{{ entity.tablename }}]
+    @{{ entity.primarykey?.name ?? "Id" }} {{ entity.primarykey?.sqltype ?? "INT" }},
+    @RowsAffected INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DELETE FROM [{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}].[{{ entity.tablename }}]
+    WHERE [{{ entity.primarykey?.name ?? "Id" }}] = @{{ entity.primarykey?.name ?? "Id" }};
+
+    SET @RowsAffected = @@ROWCOUNT;
+END
+GO
+
+PRINT 'Stored Procedures de {{ entity.tablename }} creados exitosamente';
+GO

@@ -1,0 +1,43 @@
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+import { {{ entity.name }}, {{ entity.name }}CreateDto, {{ entity.name }}UpdateDto, PagedResult } from '../models/{{ entity.angularfilename }}.model';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class {{ entity.name }}Service {
+
+  private readonly apiUrl = `${environment.apiUrl}{{ entity.api?.route ?? "/api/" + (entity.name | string.downcase) + "s" }}`;
+
+  constructor(private http: HttpClient) {}
+
+  getAll(page = 1, pageSize = 10, orderBy?: string, orderDesc = false): Observable<PagedResult<{{ entity.name }}>> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('pageSize', pageSize.toString());
+
+    if (orderBy) {
+      params = params.set('orderBy', orderBy).set('orderDesc', orderDesc.toString());
+    }
+
+    return this.http.get<PagedResult<{{ entity.name }}>>(this.apiUrl, { params });
+  }
+
+  getById(id: number): Observable<{{ entity.name }}> {
+    return this.http.get<{{ entity.name }}>(`${this.apiUrl}/${id}`);
+  }
+
+  create(dto: {{ entity.name }}CreateDto): Observable<{{ entity.name }}> {
+    return this.http.post<{{ entity.name }}>(this.apiUrl, dto);
+  }
+
+  update(id: number, dto: {{ entity.name }}UpdateDto): Observable<{{ entity.name }}> {
+    return this.http.put<{{ entity.name }}>(`${this.apiUrl}/${id}`, dto);
+  }
+
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+}

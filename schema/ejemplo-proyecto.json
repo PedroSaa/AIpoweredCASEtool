@@ -1,0 +1,575 @@
+{
+  "proyecto": "SistemaVentas",
+  "version": "1.0",
+  "descripcion": "Sistema de gestión de ventas con clientes, tipos de cliente y productos",
+  "tecnologias": {
+    "backend": "C# .NET 8 Web API",
+    "frontend": "Angular 17",
+    "database": "SQL Server"
+  },
+  "configuracionGlobal": {
+    "autenticacion": {
+      "tipo": "JWT",
+      "expiracionMinutos": 60,
+      "refreshToken": true
+    },
+    "roles": ["Admin", "Ventas", "Consulta"],
+    "baseDatos": {
+      "nombreBaseDatos": "SistemaVentasDB",
+      "esquema": "dbo",
+      "usarStoredProcedures": false
+    }
+  },
+  "entidades": [
+    {
+      "nombre": "TipoCliente",
+      "tabla": "TiposCliente",
+      "descripcion": "Clasificación de los clientes (ej: Regular, VIP, Corporativo)",
+      "campos": [
+        {
+          "nombre": "Id",
+          "tipo": "int",
+          "requerido": true,
+          "esPK": true,
+          "autoIncremento": true,
+          "input": {
+            "tipo": "hidden",
+            "label": "ID"
+          }
+        },
+        {
+          "nombre": "Nombre",
+          "tipo": "string",
+          "largo": 50,
+          "requerido": true,
+          "unico": true,
+          "validaciones": [
+            { "tipo": "minLength", "valor": 2, "mensaje": "El nombre debe tener al menos 2 caracteres" },
+            { "tipo": "maxLength", "valor": 50, "mensaje": "El nombre no puede superar 50 caracteres" }
+          ],
+          "input": {
+            "tipo": "text",
+            "label": "Nombre del Tipo",
+            "placeholder": "Ej: VIP, Regular...",
+            "orden": 1
+          }
+        },
+        {
+          "nombre": "Descripcion",
+          "tipo": "string",
+          "largo": 200,
+          "requerido": false,
+          "validaciones": [
+            { "tipo": "maxLength", "valor": 200, "mensaje": "La descripción no puede superar 200 caracteres" }
+          ],
+          "input": {
+            "tipo": "textarea",
+            "label": "Descripción",
+            "placeholder": "Descripción del tipo de cliente...",
+            "orden": 2
+          }
+        },
+        {
+          "nombre": "DescuentoPorcentaje",
+          "tipo": "decimal",
+          "precision": 5,
+          "escala": 2,
+          "requerido": true,
+          "valorDefecto": 0,
+          "validaciones": [
+            { "tipo": "min", "valor": 0, "mensaje": "El descuento no puede ser negativo" },
+            { "tipo": "max", "valor": 100, "mensaje": "El descuento no puede superar el 100%" }
+          ],
+          "input": {
+            "tipo": "number",
+            "label": "Descuento (%)",
+            "placeholder": "0.00",
+            "orden": 3
+          }
+        },
+        {
+          "nombre": "Activo",
+          "tipo": "bool",
+          "requerido": true,
+          "valorDefecto": true,
+          "input": {
+            "tipo": "checkbox",
+            "label": "Activo",
+            "orden": 4
+          }
+        }
+      ],
+      "reglasNegocio": [
+        {
+          "nombre": "NombreUnicoTipoCliente",
+          "descripcion": "No se puede repetir el nombre del tipo de cliente",
+          "trigger": "antesDeInsertar",
+          "condicion": "El nombre del tipo de cliente ya existe en la tabla",
+          "accion": "rechazar",
+          "mensaje": "Ya existe un tipo de cliente con ese nombre"
+        },
+        {
+          "nombre": "NombreUnicoTipoClienteActualizar",
+          "descripcion": "No se puede repetir el nombre al actualizar",
+          "trigger": "antesDeActualizar",
+          "condicion": "El nombre del tipo de cliente ya existe en otro registro",
+          "accion": "rechazar",
+          "mensaje": "Ya existe un tipo de cliente con ese nombre"
+        }
+      ],
+      "pantallas": {
+        "listado": {
+          "titulo": "Tipos de Cliente",
+          "columnas": ["Id", "Nombre", "Descripcion", "DescuentoPorcentaje", "Activo"],
+          "acciones": ["crear", "editar", "eliminar"],
+          "filtros": ["Nombre", "Activo"],
+          "paginacion": {
+            "registrosPorPagina": 10,
+            "opcionesPagina": [5, 10, 25, 50]
+          },
+          "ordenamientoPorDefecto": {
+            "campo": "Nombre",
+            "direccion": "asc"
+          }
+        },
+        "formulario": {
+          "titulo": "Tipo de Cliente",
+          "layout": "1-columna",
+          "campos": ["Nombre", "Descripcion", "DescuentoPorcentaje", "Activo"]
+        }
+      },
+      "api": {
+        "ruta": "/api/tipos-cliente",
+        "operaciones": ["GET", "GET_BY_ID", "POST", "PUT", "DELETE"],
+        "autenticacion": true,
+        "roles": ["Admin"]
+      }
+    },
+    {
+      "nombre": "Cliente",
+      "tabla": "Clientes",
+      "descripcion": "Clientes del sistema de ventas",
+      "campos": [
+        {
+          "nombre": "Id",
+          "tipo": "int",
+          "requerido": true,
+          "esPK": true,
+          "autoIncremento": true,
+          "input": {
+            "tipo": "hidden",
+            "label": "ID"
+          }
+        },
+        {
+          "nombre": "Nombre",
+          "tipo": "string",
+          "largo": 100,
+          "requerido": true,
+          "validaciones": [
+            { "tipo": "minLength", "valor": 3, "mensaje": "El nombre debe tener al menos 3 caracteres" },
+            { "tipo": "maxLength", "valor": 100, "mensaje": "El nombre no puede superar 100 caracteres" }
+          ],
+          "input": {
+            "tipo": "text",
+            "label": "Nombre Completo",
+            "placeholder": "Ingrese nombre completo...",
+            "orden": 1
+          }
+        },
+        {
+          "nombre": "Email",
+          "tipo": "string",
+          "largo": 150,
+          "requerido": true,
+          "unico": true,
+          "validaciones": [
+            { "tipo": "email", "mensaje": "El correo electrónico no es válido" },
+            { "tipo": "maxLength", "valor": 150, "mensaje": "El email no puede superar 150 caracteres" }
+          ],
+          "input": {
+            "tipo": "email",
+            "label": "Correo Electrónico",
+            "placeholder": "usuario@dominio.com",
+            "orden": 2
+          }
+        },
+        {
+          "nombre": "Telefono",
+          "tipo": "string",
+          "largo": 20,
+          "requerido": false,
+          "validaciones": [
+            {
+              "tipo": "regex",
+              "expresionRegex": "^[+]?[0-9\\s\\-()]{7,20}$",
+              "mensaje": "Formato de teléfono inválido"
+            }
+          ],
+          "input": {
+            "tipo": "text",
+            "label": "Teléfono",
+            "placeholder": "+56 9 1234 5678",
+            "orden": 3
+          }
+        },
+        {
+          "nombre": "FechaNacimiento",
+          "tipo": "date",
+          "requerido": false,
+          "validaciones": [
+            { "tipo": "fechaMaxima", "valor": "hoy", "mensaje": "La fecha de nacimiento no puede ser futura" },
+            { "tipo": "fechaMinima", "valor": "1900-01-01", "mensaje": "Fecha de nacimiento inválida" }
+          ],
+          "input": {
+            "tipo": "datepicker",
+            "label": "Fecha de Nacimiento",
+            "orden": 4
+          }
+        },
+        {
+          "nombre": "Direccion",
+          "tipo": "string",
+          "largo": 300,
+          "requerido": false,
+          "validaciones": [
+            { "tipo": "maxLength", "valor": 300, "mensaje": "La dirección no puede superar 300 caracteres" }
+          ],
+          "input": {
+            "tipo": "textarea",
+            "label": "Dirección",
+            "placeholder": "Calle, número, ciudad...",
+            "orden": 5
+          }
+        },
+        {
+          "nombre": "TipoClienteId",
+          "tipo": "int",
+          "requerido": true,
+          "esFK": true,
+          "input": {
+            "tipo": "dropdown",
+            "label": "Tipo de Cliente",
+            "fuenteDatos": "TipoCliente",
+            "orden": 6
+          }
+        },
+        {
+          "nombre": "Activo",
+          "tipo": "bool",
+          "requerido": true,
+          "valorDefecto": true,
+          "input": {
+            "tipo": "checkbox",
+            "label": "Activo",
+            "orden": 7
+          }
+        },
+        {
+          "nombre": "FechaRegistro",
+          "tipo": "datetime",
+          "requerido": true,
+          "valorDefecto": "now",
+          "input": {
+            "tipo": "hidden",
+            "label": "Fecha de Registro",
+            "ocultarEnListado": false
+          }
+        }
+      ],
+      "relaciones": [
+        {
+          "nombre": "TipoClienteRelacion",
+          "tipo": "ManyToOne",
+          "entidadDestino": "TipoCliente",
+          "campoLocal": "TipoClienteId",
+          "campoDestino": "Id",
+          "cargaEager": true
+        }
+      ],
+      "reglasNegocio": [
+        {
+          "nombre": "EmailUnicoCliente",
+          "descripcion": "No puede haber dos clientes con el mismo email",
+          "trigger": "antesDeInsertar",
+          "condicion": "El email ya existe en la tabla Clientes",
+          "accion": "rechazar",
+          "mensaje": "Ya existe un cliente registrado con ese correo electrónico"
+        },
+        {
+          "nombre": "EmailUnicoClienteActualizar",
+          "descripcion": "No puede haber dos clientes con el mismo email al actualizar",
+          "trigger": "antesDeActualizar",
+          "condicion": "El email ya existe en otro registro de la tabla Clientes",
+          "accion": "rechazar",
+          "mensaje": "Ya existe otro cliente registrado con ese correo electrónico"
+        },
+        {
+          "nombre": "NoEliminarClienteConVentas",
+          "descripcion": "No se puede eliminar un cliente que tenga ventas asociadas",
+          "trigger": "antesDeEliminar",
+          "condicion": "El cliente tiene registros relacionados en la tabla Ventas",
+          "accion": "rechazar",
+          "mensaje": "No se puede eliminar el cliente porque tiene ventas asociadas. Desactive el cliente en su lugar."
+        }
+      ],
+      "pantallas": {
+        "listado": {
+          "titulo": "Gestión de Clientes",
+          "columnas": ["Id", "Nombre", "Email", "Telefono", "TipoCliente", "Activo", "FechaRegistro"],
+          "acciones": ["crear", "editar", "eliminar", "exportar"],
+          "filtros": ["Nombre", "Email", "TipoClienteId", "Activo"],
+          "paginacion": {
+            "registrosPorPagina": 10,
+            "opcionesPagina": [5, 10, 25, 50, 100]
+          },
+          "ordenamientoPorDefecto": {
+            "campo": "Nombre",
+            "direccion": "asc"
+          }
+        },
+        "formulario": {
+          "titulo": "Cliente",
+          "layout": "2-columnas",
+          "secciones": [
+            {
+              "titulo": "Datos Personales",
+              "campos": ["Nombre", "Email", "Telefono", "FechaNacimiento"],
+              "columnas": 2
+            },
+            {
+              "titulo": "Clasificación",
+              "campos": ["TipoClienteId", "Activo"],
+              "columnas": 2
+            },
+            {
+              "titulo": "Dirección",
+              "campos": ["Direccion"],
+              "columnas": 1
+            }
+          ]
+        }
+      },
+      "api": {
+        "ruta": "/api/clientes",
+        "operaciones": ["GET", "GET_BY_ID", "POST", "PUT", "DELETE"],
+        "autenticacion": true,
+        "roles": ["Admin", "Ventas"],
+        "versionamiento": "v1"
+      }
+    },
+    {
+      "nombre": "Producto",
+      "tabla": "Productos",
+      "descripcion": "Catálogo de productos disponibles para la venta",
+      "campos": [
+        {
+          "nombre": "Id",
+          "tipo": "int",
+          "requerido": true,
+          "esPK": true,
+          "autoIncremento": true,
+          "input": {
+            "tipo": "hidden",
+            "label": "ID"
+          }
+        },
+        {
+          "nombre": "Codigo",
+          "tipo": "string",
+          "largo": 20,
+          "requerido": true,
+          "unico": true,
+          "validaciones": [
+            { "tipo": "minLength", "valor": 3, "mensaje": "El código debe tener al menos 3 caracteres" },
+            { "tipo": "maxLength", "valor": 20, "mensaje": "El código no puede superar 20 caracteres" },
+            {
+              "tipo": "regex",
+              "expresionRegex": "^[A-Z0-9\\-]+$",
+              "mensaje": "El código solo puede contener letras mayúsculas, números y guiones"
+            }
+          ],
+          "input": {
+            "tipo": "text",
+            "label": "Código",
+            "placeholder": "PRD-001",
+            "orden": 1
+          }
+        },
+        {
+          "nombre": "Nombre",
+          "tipo": "string",
+          "largo": 150,
+          "requerido": true,
+          "validaciones": [
+            { "tipo": "minLength", "valor": 3, "mensaje": "El nombre debe tener al menos 3 caracteres" },
+            { "tipo": "maxLength", "valor": 150, "mensaje": "El nombre no puede superar 150 caracteres" }
+          ],
+          "input": {
+            "tipo": "text",
+            "label": "Nombre del Producto",
+            "placeholder": "Ingrese nombre del producto...",
+            "orden": 2
+          }
+        },
+        {
+          "nombre": "Descripcion",
+          "tipo": "string",
+          "largo": 500,
+          "requerido": false,
+          "validaciones": [
+            { "tipo": "maxLength", "valor": 500, "mensaje": "La descripción no puede superar 500 caracteres" }
+          ],
+          "input": {
+            "tipo": "textarea",
+            "label": "Descripción",
+            "placeholder": "Descripción detallada del producto...",
+            "orden": 3
+          }
+        },
+        {
+          "nombre": "Precio",
+          "tipo": "decimal",
+          "precision": 18,
+          "escala": 2,
+          "requerido": true,
+          "validaciones": [
+            { "tipo": "min", "valor": 0.01, "mensaje": "El precio debe ser mayor a 0" },
+            { "tipo": "max", "valor": 9999999.99, "mensaje": "El precio excede el máximo permitido" }
+          ],
+          "input": {
+            "tipo": "number",
+            "label": "Precio (USD)",
+            "placeholder": "0.00",
+            "orden": 4
+          }
+        },
+        {
+          "nombre": "Stock",
+          "tipo": "int",
+          "requerido": true,
+          "valorDefecto": 0,
+          "validaciones": [
+            { "tipo": "min", "valor": 0, "mensaje": "El stock no puede ser negativo" },
+            { "tipo": "max", "valor": 999999, "mensaje": "El stock excede el máximo permitido" }
+          ],
+          "input": {
+            "tipo": "number",
+            "label": "Stock Disponible",
+            "placeholder": "0",
+            "orden": 5
+          }
+        },
+        {
+          "nombre": "StockMinimo",
+          "tipo": "int",
+          "requerido": true,
+          "valorDefecto": 5,
+          "validaciones": [
+            { "tipo": "min", "valor": 0, "mensaje": "El stock mínimo no puede ser negativo" }
+          ],
+          "input": {
+            "tipo": "number",
+            "label": "Stock Mínimo (alerta)",
+            "placeholder": "5",
+            "orden": 6
+          }
+        },
+        {
+          "nombre": "FechaVencimiento",
+          "tipo": "date",
+          "requerido": false,
+          "validaciones": [
+            { "tipo": "fechaMinima", "valor": "hoy", "mensaje": "La fecha de vencimiento no puede ser pasada" }
+          ],
+          "input": {
+            "tipo": "datepicker",
+            "label": "Fecha de Vencimiento",
+            "orden": 7
+          }
+        },
+        {
+          "nombre": "Activo",
+          "tipo": "bool",
+          "requerido": true,
+          "valorDefecto": true,
+          "input": {
+            "tipo": "checkbox",
+            "label": "Activo",
+            "orden": 8
+          }
+        }
+      ],
+      "reglasNegocio": [
+        {
+          "nombre": "CodigoUnicoProducto",
+          "descripcion": "No puede existir dos productos con el mismo código",
+          "trigger": "antesDeInsertar",
+          "condicion": "El código del producto ya existe en la tabla Productos",
+          "accion": "rechazar",
+          "mensaje": "Ya existe un producto con ese código"
+        },
+        {
+          "nombre": "AlertaStockMinimo",
+          "descripcion": "Notificar cuando el stock esté por debajo del mínimo",
+          "trigger": "despuesDeActualizar",
+          "condicion": "El campo Stock es menor que StockMinimo",
+          "accion": "notificar",
+          "mensaje": "ALERTA: El stock del producto está por debajo del mínimo configurado"
+        },
+        {
+          "nombre": "NoEliminarProductoEnUso",
+          "descripcion": "No eliminar producto que está en ventas",
+          "trigger": "antesDeEliminar",
+          "condicion": "El producto tiene registros en la tabla DetalleVenta",
+          "accion": "rechazar",
+          "mensaje": "No se puede eliminar el producto porque tiene ventas asociadas. Desactívelo en su lugar."
+        }
+      ],
+      "pantallas": {
+        "listado": {
+          "titulo": "Catálogo de Productos",
+          "columnas": ["Id", "Codigo", "Nombre", "Precio", "Stock", "Activo"],
+          "acciones": ["crear", "editar", "eliminar", "exportar", "importar"],
+          "filtros": ["Nombre", "Codigo", "Activo"],
+          "paginacion": {
+            "registrosPorPagina": 10,
+            "opcionesPagina": [5, 10, 25, 50, 100]
+          },
+          "ordenamientoPorDefecto": {
+            "campo": "Nombre",
+            "direccion": "asc"
+          }
+        },
+        "formulario": {
+          "titulo": "Producto",
+          "layout": "2-columnas",
+          "secciones": [
+            {
+              "titulo": "Información General",
+              "campos": ["Codigo", "Nombre"],
+              "columnas": 2
+            },
+            {
+              "titulo": "Precio e Inventario",
+              "campos": ["Precio", "Stock", "StockMinimo", "FechaVencimiento"],
+              "columnas": 2
+            },
+            {
+              "titulo": "Descripción",
+              "campos": ["Descripcion", "Activo"],
+              "columnas": 1
+            }
+          ]
+        }
+      },
+      "api": {
+        "ruta": "/api/productos",
+        "operaciones": ["GET", "GET_BY_ID", "POST", "PUT", "DELETE"],
+        "autenticacion": true,
+        "roles": ["Admin", "Ventas"],
+        "versionamiento": "v1"
+      }
+    }
+  ]
+}

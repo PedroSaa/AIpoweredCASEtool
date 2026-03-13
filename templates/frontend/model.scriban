@@ -1,0 +1,47 @@
+// Generado por AICASE - {{ entity.name }} Model
+// Proyecto: {{ project.name }}
+
+export interface {{ entity.name }} {
+  {{- for field in entity.fields }}
+  {{ field.name | to_camel_case }}: {{ field.typescripttype }}{{ if !field.isrequired }} | null{{ end }};
+  {{- end }}
+  {{- for rel in entity.relations }}
+  {{- if rel.type == "ManyToOne" }}
+  {{ rel.targetentity | to_camel_case }}?: {{ rel.targetentity }}Summary | null;
+  {{- end }}
+  {{- end }}
+}
+
+export interface {{ entity.name }}CreateDto {
+  {{- for field in entity.fields }}
+  {{- if !field.ispk }}
+  {{ field.name | to_camel_case }}{{ if !field.isrequired }}?{{ end }}: {{ field.typescripttype }}{{ if !field.isrequired }} | null{{ end }};
+  {{- end }}
+  {{- end }}
+}
+
+export interface {{ entity.name }}UpdateDto {
+  {{- for field in entity.fields }}
+  {{- if !field.ispk }}
+  {{ field.name | to_camel_case }}{{ if !field.isrequired }}?{{ end }}: {{ field.typescripttype }}{{ if !field.isrequired }} | null{{ end }};
+  {{- end }}
+  {{- end }}
+}
+
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+{{- for rel in entity.relations }}
+{{- if rel.type == "ManyToOne" }}
+
+// Resumen de {{ rel.targetentity }} para uso en dropdowns
+export interface {{ rel.targetentity }}Summary {
+  id: number;
+  nombre: string;
+}
+{{- end }}
+{{- end }}

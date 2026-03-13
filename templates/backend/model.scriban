@@ -1,0 +1,52 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace {{ project.csharpnamespace }}.Models;
+
+/// <summary>
+/// {{ entity.description }}
+/// </summary>
+[Table("{{ entity.tablename }}")]
+public class {{ entity.name }}
+{
+    {{- for field in entity.fields }}
+    {{- if field.isrequired && !field.ispk }}
+    [Required(ErrorMessage = "El campo {{ field.input.label }} es requerido")]
+    {{- end }}
+    {{- if field.maxlength }}
+    [MaxLength({{ field.maxlength }}, ErrorMessage = "Máximo {{ field.maxlength }} caracteres")]
+    {{- end }}
+    {{- if field.ispk }}
+    [Key]
+    {{- if field.autoincrement }}
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    {{- end }}
+    {{- end }}
+    {{- if field.isunique }}
+    // Unicidad manejada via Fluent API en {{ entity.name }}Configuration.cs
+    {{- end }}
+    {{- for val in field.validations }}
+    {{- if val.type == "email" }}
+    [EmailAddress(ErrorMessage = "{{ val.message }}")]
+    {{- end }}
+    {{- if val.type == "regex" }}
+    [RegularExpression(@"{{ val.regexexpression }}", ErrorMessage = "{{ val.message }}")]
+    {{- end }}
+    {{- end }}
+    public {{ field.csharptype }} {{ field.name }} { get; set; }{{ if field.type == "string" && !field.isrequired }} = string.Empty;{{ else if field.type == "string" }} = string.Empty;{{ end }}
+    {{- end }}
+
+    {{- # Navigation properties para relaciones ManyToOne }}
+    {{- for rel in entity.relations }}
+    {{- if rel.type == "ManyToOne" }}
+
+    // Relación {{ rel.name }}: ManyToOne con {{ rel.targetentity }}
+    public {{ rel.targetentity }}? {{ rel.targetentity }} { get; set; }
+    {{- end }}
+    {{- if rel.type == "OneToMany" }}
+
+    // Relación {{ rel.name }}: OneToMany con {{ rel.targetentity }}
+    public ICollection<{{ rel.targetentity }}> {{ rel.targetentity }}s { get; set; } = new List<{{ rel.targetentity }}>();
+    {{- end }}
+    {{- end }}
+}

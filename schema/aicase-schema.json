@@ -1,0 +1,545 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/PedroSaa/AIpoweredCASEtool/schema/aicase-schema.json",
+  "title": "AICASE Schema",
+  "description": "Schema formal para la definición de proyectos en AICASE - Artificial Intelligence Computer-Aided Software Engineering",
+  "type": "object",
+  "required": ["proyecto", "version", "tecnologias", "entidades"],
+  "properties": {
+    "proyecto": {
+      "type": "string",
+      "description": "Nombre del proyecto",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "description": "Versión del proyecto (semver recomendado)",
+      "pattern": "^\\d+\\.\\d+(\\.\\d+)?$"
+    },
+    "descripcion": {
+      "type": "string",
+      "description": "Descripción del proyecto"
+    },
+    "tecnologias": {
+      "type": "object",
+      "description": "Stack tecnológico objetivo",
+      "required": ["backend", "frontend", "database"],
+      "properties": {
+        "backend": {
+          "type": "string",
+          "description": "Tecnología backend (ej: C# .NET 8 Web API)"
+        },
+        "frontend": {
+          "type": "string",
+          "description": "Tecnología frontend (ej: Angular 17)"
+        },
+        "database": {
+          "type": "string",
+          "description": "Base de datos (ej: SQL Server)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "configuracionGlobal": {
+      "type": "object",
+      "description": "Configuración global del sistema",
+      "properties": {
+        "autenticacion": {
+          "type": "object",
+          "properties": {
+            "tipo": {
+              "type": "string",
+              "enum": ["JWT", "OAuth2", "ApiKey", "None"],
+              "description": "Tipo de autenticación"
+            },
+            "expiracionMinutos": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Tiempo de expiración del token en minutos"
+            },
+            "refreshToken": {
+              "type": "boolean",
+              "description": "Si se usa refresh token"
+            }
+          },
+          "additionalProperties": false
+        },
+        "roles": {
+          "type": "array",
+          "description": "Roles del sistema",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "baseDatos": {
+          "type": "object",
+          "properties": {
+            "nombreBaseDatos": {
+              "type": "string"
+            },
+            "esquema": {
+              "type": "string",
+              "default": "dbo"
+            },
+            "usarStoredProcedures": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "entidades": {
+      "type": "array",
+      "description": "Lista de entidades del sistema",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/entidad"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "entidad": {
+      "type": "object",
+      "required": ["nombre", "tabla", "campos"],
+      "properties": {
+        "nombre": {
+          "type": "string",
+          "description": "Nombre de la entidad (PascalCase)",
+          "pattern": "^[A-Z][a-zA-Z0-9]*$"
+        },
+        "tabla": {
+          "type": "string",
+          "description": "Nombre de la tabla en la base de datos"
+        },
+        "descripcion": {
+          "type": "string",
+          "description": "Descripción de la entidad"
+        },
+        "campos": {
+          "type": "array",
+          "description": "Campos/columnas de la entidad",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/campo"
+          }
+        },
+        "relaciones": {
+          "type": "array",
+          "description": "Relaciones con otras entidades",
+          "items": {
+            "$ref": "#/definitions/relacion"
+          }
+        },
+        "reglasNegocio": {
+          "type": "array",
+          "description": "Reglas de negocio de la entidad",
+          "items": {
+            "$ref": "#/definitions/reglaNegocio"
+          }
+        },
+        "pantallas": {
+          "$ref": "#/definitions/pantallas"
+        },
+        "api": {
+          "$ref": "#/definitions/apiConfig"
+        }
+      },
+      "additionalProperties": false
+    },
+    "campo": {
+      "type": "object",
+      "required": ["nombre", "tipo"],
+      "properties": {
+        "nombre": {
+          "type": "string",
+          "description": "Nombre del campo (PascalCase)",
+          "pattern": "^[A-Z][a-zA-Z0-9]*$"
+        },
+        "tipo": {
+          "type": "string",
+          "description": "Tipo de dato",
+          "enum": ["string", "int", "decimal", "double", "float", "long", "date", "datetime", "bool", "guid", "byte[]"]
+        },
+        "largo": {
+          "type": "integer",
+          "description": "Longitud máxima (para strings)",
+          "minimum": 1
+        },
+        "precision": {
+          "type": "integer",
+          "description": "Precisión total (para decimales)",
+          "minimum": 1
+        },
+        "escala": {
+          "type": "integer",
+          "description": "Escala decimal (para decimales)",
+          "minimum": 0
+        },
+        "requerido": {
+          "type": "boolean",
+          "description": "Si el campo es obligatorio",
+          "default": false
+        },
+        "unico": {
+          "type": "boolean",
+          "description": "Si el campo tiene restricción de unicidad",
+          "default": false
+        },
+        "esPK": {
+          "type": "boolean",
+          "description": "Si es clave primaria",
+          "default": false
+        },
+        "autoIncremento": {
+          "type": "boolean",
+          "description": "Si es auto incremento (identity)",
+          "default": false
+        },
+        "valorDefecto": {
+          "description": "Valor por defecto del campo"
+        },
+        "esFK": {
+          "type": "boolean",
+          "description": "Si es clave foránea",
+          "default": false
+        },
+        "validaciones": {
+          "type": "array",
+          "description": "Validaciones del campo",
+          "items": {
+            "$ref": "#/definitions/validacion"
+          }
+        },
+        "input": {
+          "$ref": "#/definitions/inputUI"
+        }
+      },
+      "additionalProperties": false
+    },
+    "validacion": {
+      "type": "object",
+      "required": ["tipo"],
+      "properties": {
+        "tipo": {
+          "type": "string",
+          "description": "Tipo de validación",
+          "enum": [
+            "minLength",
+            "maxLength",
+            "min",
+            "max",
+            "email",
+            "regex",
+            "fechaMaxima",
+            "fechaMinima",
+            "personalizado"
+          ]
+        },
+        "valor": {
+          "description": "Valor de referencia para la validación"
+        },
+        "mensaje": {
+          "type": "string",
+          "description": "Mensaje de error personalizado"
+        },
+        "expresionRegex": {
+          "type": "string",
+          "description": "Expresión regular (para tipo regex)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "inputUI": {
+      "type": "object",
+      "required": ["tipo", "label"],
+      "properties": {
+        "tipo": {
+          "type": "string",
+          "description": "Tipo de input en la UI",
+          "enum": [
+            "text",
+            "email",
+            "number",
+            "datepicker",
+            "dropdown",
+            "checkbox",
+            "textarea",
+            "radio",
+            "autocomplete",
+            "password",
+            "hidden"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "description": "Etiqueta del campo en la UI"
+        },
+        "placeholder": {
+          "type": "string",
+          "description": "Texto placeholder del input"
+        },
+        "fuenteDatos": {
+          "type": "string",
+          "description": "Fuente de datos para dropdowns/autocomplete (nombre de entidad o URL)"
+        },
+        "opciones": {
+          "type": "array",
+          "description": "Opciones estáticas para radio/dropdown",
+          "items": {
+            "type": "object",
+            "required": ["valor", "etiqueta"],
+            "properties": {
+              "valor": {},
+              "etiqueta": { "type": "string" }
+            }
+          }
+        },
+        "orden": {
+          "type": "integer",
+          "description": "Orden de aparición en el formulario"
+        },
+        "ocultarEnListado": {
+          "type": "boolean",
+          "description": "Si se oculta en la pantalla de listado",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "relacion": {
+      "type": "object",
+      "required": ["tipo", "entidadDestino", "campoLocal", "campoDestino"],
+      "properties": {
+        "nombre": {
+          "type": "string",
+          "description": "Nombre descriptivo de la relación"
+        },
+        "tipo": {
+          "type": "string",
+          "description": "Tipo de relación",
+          "enum": ["ManyToOne", "OneToMany", "OneToOne", "ManyToMany"]
+        },
+        "entidadDestino": {
+          "type": "string",
+          "description": "Nombre de la entidad destino"
+        },
+        "campoLocal": {
+          "type": "string",
+          "description": "Campo local de la relación"
+        },
+        "campoDestino": {
+          "type": "string",
+          "description": "Campo en la entidad destino"
+        },
+        "cargaEager": {
+          "type": "boolean",
+          "description": "Si se carga de forma eager (Include en EF)",
+          "default": false
+        },
+        "tablaPivote": {
+          "type": "string",
+          "description": "Tabla pivote para ManyToMany"
+        }
+      },
+      "additionalProperties": false
+    },
+    "reglaNegocio": {
+      "type": "object",
+      "required": ["nombre", "trigger", "accion"],
+      "properties": {
+        "nombre": {
+          "type": "string",
+          "description": "Nombre identificador de la regla"
+        },
+        "descripcion": {
+          "type": "string",
+          "description": "Descripción de la regla"
+        },
+        "trigger": {
+          "type": "string",
+          "description": "Evento que dispara la regla",
+          "enum": [
+            "antesDeInsertar",
+            "despuesDeInsertar",
+            "antesDeActualizar",
+            "despuesDeActualizar",
+            "antesDeEliminar",
+            "despuesDeEliminar",
+            "alConsultar"
+          ]
+        },
+        "condicion": {
+          "type": "string",
+          "description": "Condición que activa la regla (descripción en lenguaje natural para la IA)"
+        },
+        "accion": {
+          "type": "string",
+          "description": "Acción a ejecutar",
+          "enum": ["rechazar", "modificar", "notificar", "registrarLog", "personalizado"]
+        },
+        "mensaje": {
+          "type": "string",
+          "description": "Mensaje de error o notificación"
+        },
+        "codigoPersonalizado": {
+          "type": "string",
+          "description": "Código personalizado para la acción (generado por IA)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "pantallas": {
+      "type": "object",
+      "description": "Configuración de pantallas de la entidad",
+      "properties": {
+        "listado": {
+          "$ref": "#/definitions/pantallaListado"
+        },
+        "formulario": {
+          "$ref": "#/definitions/pantallaFormulario"
+        }
+      },
+      "additionalProperties": false
+    },
+    "pantallaListado": {
+      "type": "object",
+      "required": ["titulo", "columnas"],
+      "properties": {
+        "titulo": {
+          "type": "string",
+          "description": "Título de la pantalla de listado"
+        },
+        "columnas": {
+          "type": "array",
+          "description": "Columnas a mostrar en la tabla",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "acciones": {
+          "type": "array",
+          "description": "Acciones disponibles en el listado",
+          "items": {
+            "type": "string",
+            "enum": ["crear", "editar", "eliminar", "ver", "exportar", "importar"]
+          }
+        },
+        "filtros": {
+          "type": "array",
+          "description": "Campos por los que se puede filtrar",
+          "items": { "type": "string" }
+        },
+        "paginacion": {
+          "type": "object",
+          "properties": {
+            "registrosPorPagina": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 10
+            },
+            "opcionesPagina": {
+              "type": "array",
+              "items": { "type": "integer" }
+            }
+          },
+          "additionalProperties": false
+        },
+        "ordenamientoPorDefecto": {
+          "type": "object",
+          "properties": {
+            "campo": { "type": "string" },
+            "direccion": {
+              "type": "string",
+              "enum": ["asc", "desc"]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "pantallaFormulario": {
+      "type": "object",
+      "required": ["titulo"],
+      "properties": {
+        "titulo": {
+          "type": "string",
+          "description": "Título del formulario"
+        },
+        "layout": {
+          "type": "string",
+          "description": "Layout del formulario",
+          "enum": ["1-columna", "2-columnas", "3-columnas", "personalizado"],
+          "default": "1-columna"
+        },
+        "campos": {
+          "type": "array",
+          "description": "Campos a mostrar en el formulario (en orden)",
+          "items": { "type": "string" }
+        },
+        "secciones": {
+          "type": "array",
+          "description": "Secciones del formulario",
+          "items": {
+            "type": "object",
+            "required": ["titulo", "campos"],
+            "properties": {
+              "titulo": { "type": "string" },
+              "campos": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "columnas": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "apiConfig": {
+      "type": "object",
+      "required": ["ruta", "operaciones"],
+      "properties": {
+        "ruta": {
+          "type": "string",
+          "description": "Ruta base de la API (ej: /api/clientes)",
+          "pattern": "^/api/[a-zA-Z0-9/-]+$"
+        },
+        "operaciones": {
+          "type": "array",
+          "description": "Operaciones HTTP habilitadas",
+          "items": {
+            "type": "string",
+            "enum": ["GET", "GET_BY_ID", "POST", "PUT", "PATCH", "DELETE"]
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "autenticacion": {
+          "type": "boolean",
+          "description": "Si requiere autenticación",
+          "default": true
+        },
+        "roles": {
+          "type": "array",
+          "description": "Roles permitidos para acceder",
+          "items": { "type": "string" }
+        },
+        "versionamiento": {
+          "type": "string",
+          "description": "Versión de la API (ej: v1)"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

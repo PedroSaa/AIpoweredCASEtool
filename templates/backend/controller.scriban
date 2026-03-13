@@ -1,0 +1,127 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using {{ project.csharpnamespace }}.DTOs;
+using {{ project.csharpnamespace }}.Services;
+
+namespace {{ project.csharpnamespace }}.Controllers;
+
+[ApiController]
+[Route("{{ entity.api?.route ?? "/api/" + (entity.name | string.downcase) + "s" }}")]
+{{- if entity.api?.requiresauth }}
+{{- if entity.api?.roles | array.size > 0 }}
+[Authorize(Roles = "{{ entity.api.roles | array.join ", " }}")]
+{{- else }}
+[Authorize]
+{{- end }}
+{{- end }}
+[Produces("application/json")]
+public class {{ entity.name }}sController : ControllerBase
+{
+    private readonly I{{ entity.name }}Service _service;
+
+    public {{ entity.name }}sController(I{{ entity.name }}Service service)
+    {
+        _service = service;
+    }
+
+    {{- if entity.api?.operations | array.contains "GET" }}
+    /// <summary>Obtiene listado paginado de {{ entity.name }}s</summary>
+    [HttpGet]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? orderBy = null,
+        [FromQuery] bool orderDesc = false)
+    {
+        var (items, total) = await _service.GetAllAsync(page, pageSize, orderBy, orderDesc);
+        return Ok(new
+        {
+            items,
+            totalCount = total,
+            page,
+            pageSize,
+            totalPages = (int)Math.Ceiling((double)total / pageSize)
+        });
+    }
+    {{- end }}
+
+    {{- if entity.api?.operations | array.contains "GET_BY_ID" }}
+    /// <summary>Obtiene un {{ entity.name }} por ID</summary>
+    [HttpGet("{id}")]
+    [ProducesResponseType(typeof({{ entity.name }}ResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById({{ entity.primarykey?.csharptype ?? "int" }} id)
+    {
+        var item = await _service.GetByIdAsync(id);
+        return item == null ? NotFound() : Ok(item);
+    }
+    {{- end }}
+
+    {{- if entity.api?.operations | array.contains "POST" }}
+    /// <summary>Crea un nuevo {{ entity.name }}</summary>
+    [HttpPost]
+    [ProducesResponseType(typeof({{ entity.name }}ResponseDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Create([FromBody] {{ entity.name }}CreateDto dto)
+    {
+        try
+        {
+            var created = await _service.CreateAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id = created.{{ entity.primarykey?.name ?? "Id" }} }, created);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+    {{- end }}
+
+    {{- if entity.api?.operations | array.contains "PUT" }}
+    /// <summary>Actualiza un {{ entity.name }}</summary>
+    [HttpPut("{id}")]
+    [ProducesResponseType(typeof({{ entity.name }}ResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Update({{ entity.primarykey?.csharptype ?? "int" }} id, [FromBody] {{ entity.name }}UpdateDto dto)
+    {
+        try
+        {
+            var updated = await _service.UpdateAsync(id, dto);
+            return Ok(updated);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+    {{- end }}
+
+    {{- if entity.api?.operations | array.contains "DELETE" }}
+    /// <summary>Elimina un {{ entity.name }}</summary>
+    [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Delete({{ entity.primarykey?.csharptype ?? "int" }} id)
+    {
+        try
+        {
+            await _service.DeleteAsync(id);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+    {{- end }}
+}

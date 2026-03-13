@@ -1,0 +1,16 @@
+using {{ project.csharpnamespace }}.DTOs;
+using {{ project.csharpnamespace }}.Models;
+
+namespace {{ project.csharpnamespace }}.Services;
+
+/// <summary>
+/// Interfaz del servicio para {{ entity.name }}
+/// </summary>
+public interface I{{ entity.name }}Service
+{
+    Task<(IEnumerable<{{ entity.name }}ResponseDto> Items, int TotalCount)> GetAllAsync(int page = 1, int pageSize = 10, string? orderBy = null, bool orderDesc = false);
+    Task<{{ entity.name }}ResponseDto?> GetByIdAsync({{ entity.primarykey?.csharptype ?? "int" }} id);
+    Task<{{ entity.name }}ResponseDto> CreateAsync({{ entity.name }}CreateDto dto);
+    Task<{{ entity.name }}ResponseDto> UpdateAsync({{ entity.primarykey?.csharptype ?? "int" }} id, {{ entity.name }}UpdateDto dto);
+    Task DeleteAsync({{ entity.primarykey?.csharptype ?? "int" }} id);
+}

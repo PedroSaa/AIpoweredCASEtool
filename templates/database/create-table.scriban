@@ -1,0 +1,54 @@
+-- ============================================================
+-- Tabla: {{ entity.tablename }}
+-- Entidad: {{ entity.name }}
+-- Generado por AICASE
+-- ============================================================
+
+USE [{{ project.globalconfig?.databaseconfig?.databasename ?? project.name + "DB" }}];
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '{{ entity.tablename }}' AND schema_id = SCHEMA_ID('{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}'))
+BEGIN
+
+    CREATE TABLE [{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}].[{{ entity.tablename }}] (
+
+        {{- for field in entity.fields }}
+        {{- is_last = for.last }}
+        [{{ field.name }}] {{ field.sqltype }}
+            {{- if field.ispk && field.autoincrement }} IDENTITY(1,1){{ end }}
+            {{- if field.ispk }} NOT NULL{{ else if field.isrequired }} NOT NULL{{ else }} NULL{{ end }}
+            ,
+        {{- end }}
+
+        {{- if entity.primarykey }}
+        CONSTRAINT [PK_{{ entity.tablename }}] PRIMARY KEY CLUSTERED ([{{ entity.primarykey.name }}] ASC)
+        {{- end }}
+
+        {{- for rel in entity.relations }}
+        {{- if rel.type == "ManyToOne" }}
+        ,CONSTRAINT [FK_{{ entity.tablename }}_{{ rel.targetentity }}]
+            FOREIGN KEY ([{{ rel.localfield }}])
+            REFERENCES [{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}].[{{ rel.targetentity }}s] ([{{ rel.targetfield }}])
+            ON DELETE NO ACTION
+            ON UPDATE NO ACTION
+        {{- end }}
+        {{- end }}
+    );
+
+    -- Índices únicos
+    {{- for field in entity.fields }}
+    {{- if field.isunique && !field.ispk }}
+
+    CREATE UNIQUE NONCLUSTERED INDEX [IX_{{ entity.tablename }}_{{ field.name }}]
+        ON [{{ project.globalconfig?.databaseconfig?.schema ?? "dbo" }}].[{{ entity.tablename }}] ([{{ field.name }}] ASC)
+        WHERE [{{ field.name }}] IS NOT NULL;
+    {{- end }}
+    {{- end }}
+
+    PRINT 'Tabla {{ entity.tablename }} creada exitosamente';
+END
+ELSE
+BEGIN
+    PRINT 'La tabla {{ entity.tablename }} ya existe';
+END
+GO

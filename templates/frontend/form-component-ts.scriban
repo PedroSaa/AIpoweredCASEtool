@@ -1,0 +1,125 @@
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { {{ entity.name }}Service } from '../../services/{{ entity.angularfilename }}.service';
+
+@Component({
+  selector: 'app-{{ entity.angularfilename }}-form',
+  templateUrl: './{{ entity.angularfilename }}-form.component.html'
+})
+export class {{ entity.name }}FormComponent implements OnInit {
+
+  form!: FormGroup;
+  isEdit = false;
+  loading = false;
+  saving = false;
+  errorMessage = '';
+  entityId: number | null = null;
+
+  title = '{{ entity.screens?.form?.title ?? entity.name }}';
+
+  constructor(
+    private fb: FormBuilder,
+    private service: {{ entity.name }}Service,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
+
+  ngOnInit(): void {
+    this.buildForm();
+
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id && id !== 'new') {
+      this.isEdit = true;
+      this.entityId = +id;
+      this.loadData(+id);
+    }
+  }
+
+  private buildForm(): void {
+    this.form = this.fb.group({
+      {{- for field in entity.fields }}
+      {{- if !field.ispk && field.input?.type != "hidden" }}
+      {{ field.name | to_camel_case }}: [
+        {{ if field.type == "bool" }}false{{ else if field.type == "int" || field.type == "decimal" || field.type == "double" || field.type == "float" || field.type == "long" }}null{{ else }}''{{ end }},
+        [
+          {{- if field.isrequired }}
+          Validators.required,
+          {{- end }}
+          {{- for val in field.validations }}
+          {{- if val.type == "minLength" }}
+          Validators.minLength({{ val.value }}),
+          {{- end }}
+          {{- if val.type == "maxLength" }}
+          Validators.maxLength({{ val.value }}),
+          {{- end }}
+          {{- if val.type == "email" }}
+          Validators.email,
+          {{- end }}
+          {{- if val.type == "regex" }}
+          Validators.pattern(/{{ val.regexexpression }}/),
+          {{- end }}
+          {{- if val.type == "min" }}
+          Validators.min({{ val.value }}),
+          {{- end }}
+          {{- if val.type == "max" }}
+          Validators.max({{ val.value }}),
+          {{- end }}
+          {{- end }}
+        ]
+      ],
+      {{- end }}
+      {{- end }}
+    });
+  }
+
+  private loadData(id: number): void {
+    this.loading = true;
+    this.service.getById(id).subscribe({
+      next: (data) => {
+        this.form.patchValue(data);
+        this.loading = false;
+      },
+      error: (err) => {
+        this.errorMessage = 'Error al cargar el registro';
+        this.loading = false;
+        console.error(err);
+      }
+    });
+  }
+
+  onSubmit(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    this.saving = true;
+    const formValue = this.form.value;
+
+    const operation = this.isEdit && this.entityId
+      ? this.service.update(this.entityId, formValue)
+      : this.service.create(formValue);
+
+    operation.subscribe({
+      next: () => {
+        this.router.navigate(['{{ entity.api?.route ?? "/" + entity.angularfilename + "s" }}']);
+      },
+      error: (err) => {
+        this.errorMessage = err.error?.message || 'Error al guardar';
+        this.saving = false;
+        console.error(err);
+      }
+    });
+  }
+
+  onCancel(): void {
+    this.router.navigate(['{{ entity.api?.route ?? "/" + entity.angularfilename + "s" }}']);
+  }
+
+  // Helper para mostrar errores por campo
+  hasError(field: string, error: string): boolean {
+    const control = this.form.get(field);
+    return !!(control?.hasError(error) && (control?.dirty || control?.touched));
+  }
+}

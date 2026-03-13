@@ -1,0 +1,98 @@
+import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { {{ entity.name }} } from '../../models/{{ entity.angularfilename }}.model';
+import { {{ entity.name }}Service } from '../../services/{{ entity.angularfilename }}.service';
+
+@Component({
+  selector: 'app-{{ entity.angularfilename }}-list',
+  templateUrl: './{{ entity.angularfilename }}-list.component.html'
+})
+export class {{ entity.name }}ListComponent implements OnInit {
+
+  items: {{ entity.name }}[] = [];
+  totalCount = 0;
+  page = 1;
+  pageSize = {{ entity.screens?.list?.pagination?.pagesize ?? 10 }};
+  totalPages = 0;
+  loading = false;
+  errorMessage = '';
+
+  // Filtros
+  {{- for filter in entity.screens?.list?.filters ?? [] }}
+  filter{{ filter }}: string = '';
+  {{- end }}
+
+  // Ordenamiento
+  orderBy = '{{ entity.screens?.list?.defaultsort?.field ?? "" }}';
+  orderDesc = {{ if entity.screens?.list?.defaultsort?.direction == "desc" }}true{{ else }}false{{ end }};
+
+  displayedColumns: string[] = [
+    {{- for col in entity.screens?.list?.columns ?? [] }}
+    '{{ col | to_camel_case }}',
+    {{- end }}
+    'acciones'
+  ];
+
+  constructor(
+    private service: {{ entity.name }}Service,
+    private router: Router
+  ) {}
+
+  ngOnInit(): void {
+    this.loadData();
+  }
+
+  loadData(): void {
+    this.loading = true;
+    this.service.getAll(this.page, this.pageSize, this.orderBy || undefined, this.orderDesc)
+      .subscribe({
+        next: (result) => {
+          this.items = result.items;
+          this.totalCount = result.totalCount;
+          this.totalPages = result.totalPages;
+          this.loading = false;
+        },
+        error: (err) => {
+          this.errorMessage = 'Error al cargar los datos';
+          this.loading = false;
+          console.error(err);
+        }
+      });
+  }
+
+  onPageChange(newPage: number): void {
+    this.page = newPage;
+    this.loadData();
+  }
+
+  onSort(field: string): void {
+    if (this.orderBy === field) {
+      this.orderDesc = !this.orderDesc;
+    } else {
+      this.orderBy = field;
+      this.orderDesc = false;
+    }
+    this.loadData();
+  }
+
+  onCreate(): void {
+    this.router.navigate(['{{ entity.api?.route ?? "/" + entity.angularfilename + "s" }}', 'new']);
+  }
+
+  onEdit(item: {{ entity.name }}): void {
+    this.router.navigate(['{{ entity.api?.route ?? "/" + entity.angularfilename + "s" }}', item.{{ entity.primarykey?.name | to_camel_case ?? "id" }}]);
+  }
+
+  onDelete(item: {{ entity.name }}): void {
+    if (!confirm(`¿Está seguro que desea eliminar este registro?`)) return;
+
+    this.service.delete(item.{{ entity.primarykey?.name | to_camel_case ?? "id" }} as number)
+      .subscribe({
+        next: () => this.loadData(),
+        error: (err) => {
+          this.errorMessage = err.error?.message || 'Error al eliminar';
+          console.error(err);
+        }
+      });
+  }
+}

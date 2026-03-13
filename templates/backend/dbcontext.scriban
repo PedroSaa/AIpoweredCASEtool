@@ -1,0 +1,25 @@
+using Microsoft.EntityFrameworkCore;
+
+namespace {{ project.csharpnamespace }}.Data;
+
+/// <summary>
+/// DbContext principal - Generado por AICASE
+/// </summary>
+public class ApplicationDbContext : DbContext
+{
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options)
+    {
+    }
+
+    // DbSets
+    {{- for entity in project.entities }}
+    public DbSet<{{ project.csharpnamespace }}.Models.{{ entity.name }}> {{ entity.tablename }} => Set<{{ project.csharpnamespace }}.Models.{{ entity.name }}>();
+    {{- end }}
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+    }
+}

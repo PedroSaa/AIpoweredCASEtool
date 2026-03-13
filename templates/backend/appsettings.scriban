@@ -1,0 +1,19 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost;Database={{ project.globalconfig?.databaseconfig?.databasename ?? project.name + "DB" }};Trusted_Connection=True;TrustServerCertificate=True;"
+  },
+  "Jwt": {
+    "Key": "REPLACE_WITH_SECURE_KEY_MIN_32_CHARS_LONG",
+    "Issuer": "{{ project.name }}",
+    "Audience": "{{ project.name }}Users",
+    "ExpirationMinutes": {{ project.globalconfig?.authentication?.expiracionminutos ?? 60 }}
+  },
+  "AllowedOrigins": ["http://localhost:4200"],
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}

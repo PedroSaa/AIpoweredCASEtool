@@ -1,0 +1,137 @@
+<div class="container py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>{{ "{{" }} isEdit ? 'Editar' : 'Nuevo' {{ "}}" }} - {{ "{{" }} title {{ "}}" }}</h2>
+    <button class="btn btn-outline-secondary" (click)="onCancel()">
+      <i class="bi bi-arrow-left me-1"></i> Volver
+    </button>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible">
+    {{ "{{" }} errorMessage {{ "}}" }}
+    <button type="button" class="btn-close" (click)="errorMessage=''"></button>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="text-center p-4">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
+  <form *ngIf="!loading" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        {{- if entity.screens != null && entity.screens.form != null && entity.screens.form.sections != null && (entity.screens.form.sections | array.size) > 0 }}
+        {{- for section in entity.screens.form.sections }}
+        <h5 class="card-title border-bottom pb-2 mb-3">{{ section.title }}</h5>
+        <div class="row g-3 mb-4">
+          {{- for fieldName in section.fields }}
+          {{- for field in entity.fields }}
+          {{- if field.name == fieldName && field.input != null && field.input.type != "hidden" }}
+          <div class="col-md-{{ 12 / section.columns }}">
+            {{- if field.input.type == "checkbox" }}
+            <div class="form-check mt-4">
+              <input class="form-check-input" type="checkbox"
+                formControlName="{{ field.name | to_camel_case }}"
+                id="{{ field.name }}">
+              <label class="form-check-label" for="{{ field.name }}">{{ field.input.label }}</label>
+            </div>
+            {{- else if field.input.type == "textarea" }}
+            <label class="form-label" for="{{ field.name }}">{{ field.input.label }}{{ if field.isrequired }} <span class="text-danger">*</span>{{ end }}</label>
+            <textarea class="form-control"
+              [class.is-invalid]="form.get('{{ field.name | to_camel_case }}')?.invalid && form.get('{{ field.name | to_camel_case }}')?.touched"
+              formControlName="{{ field.name | to_camel_case }}"
+              id="{{ field.name }}" rows="3"
+              placeholder="{{ field.input.placeholder ?? "" }}"></textarea>
+            {{- else if field.input.type == "dropdown" }}
+            <label class="form-label" for="{{ field.name }}">{{ field.input.label }}{{ if field.isrequired }} <span class="text-danger">*</span>{{ end }}</label>
+            <select class="form-select"
+              [class.is-invalid]="form.get('{{ field.name | to_camel_case }}')?.invalid && form.get('{{ field.name | to_camel_case }}')?.touched"
+              formControlName="{{ field.name | to_camel_case }}"
+              id="{{ field.name }}">
+              <option value="">-- Seleccione --</option>
+              <!-- TODO: cargar opciones desde {{ field.input.datasource }} -->
+            </select>
+            {{- else if field.input.type == "datepicker" }}
+            <label class="form-label" for="{{ field.name }}">{{ field.input.label }}{{ if field.isrequired }} <span class="text-danger">*</span>{{ end }}</label>
+            <input type="date" class="form-control"
+              [class.is-invalid]="form.get('{{ field.name | to_camel_case }}')?.invalid && form.get('{{ field.name | to_camel_case }}')?.touched"
+              formControlName="{{ field.name | to_camel_case }}"
+              id="{{ field.name }}">
+            {{- else }}
+            <label class="form-label" for="{{ field.name }}">{{ field.input.label }}{{ if field.isrequired }} <span class="text-danger">*</span>{{ end }}</label>
+            <input type="{{ field.input.type }}" class="form-control"
+              [class.is-invalid]="form.get('{{ field.name | to_camel_case }}')?.invalid && form.get('{{ field.name | to_camel_case }}')?.touched"
+              formControlName="{{ field.name | to_camel_case }}"
+              id="{{ field.name }}"
+              placeholder="{{ field.input.placeholder ?? "" }}">
+            {{- end }}
+            <div class="invalid-feedback">
+              <span *ngIf="hasError('{{ field.name | to_camel_case }}', 'required')">Este campo es requerido.</span>
+              <span *ngIf="hasError('{{ field.name | to_camel_case }}', 'email')">Ingrese un email válido.</span>
+              <span *ngIf="hasError('{{ field.name | to_camel_case }}', 'minlength')">Longitud mínima no alcanzada.</span>
+              <span *ngIf="hasError('{{ field.name | to_camel_case }}', 'maxlength')">Longitud máxima excedida.</span>
+              <span *ngIf="hasError('{{ field.name | to_camel_case }}', 'pattern')">Formato inválido.</span>
+            </div>
+          </div>
+          {{- end }}
+          {{- end }}
+          {{- end }}
+        </div>
+        {{- end }}
+        {{- else }}
+        {{- # Sin secciones: renderizar todos los campos no ocultos }}
+        <div class="row g-3">
+          {{- for field in entity.fields }}
+          {{- if field.input != null && field.input.type != "hidden" && !field.ispk }}
+          <div class="col-md-6">
+            {{- if field.input.type == "checkbox" }}
+            <div class="form-check mt-4">
+              <input class="form-check-input" type="checkbox"
+                formControlName="{{ field.name | to_camel_case }}"
+                id="{{ field.name }}">
+              <label class="form-check-label" for="{{ field.name }}">{{ field.input.label }}</label>
+            </div>
+            {{- else if field.input.type == "textarea" }}
+            <label class="form-label" for="{{ field.name }}">{{ field.input.label }}{{ if field.isrequired }} <span class="text-danger">*</span>{{ end }}</label>
+            <textarea class="form-control"
+              formControlName="{{ field.name | to_camel_case }}"
+              id="{{ field.name }}" rows="3"
+              placeholder="{{ field.input.placeholder ?? "" }}"></textarea>
+            {{- else if field.input.type == "dropdown" }}
+            <label class="form-label" for="{{ field.name }}">{{ field.input.label }}{{ if field.isrequired }} <span class="text-danger">*</span>{{ end }}</label>
+            <select class="form-select"
+              formControlName="{{ field.name | to_camel_case }}"
+              id="{{ field.name }}">
+              <option value="">-- Seleccione --</option>
+            </select>
+            {{- else if field.input.type == "datepicker" }}
+            <label class="form-label" for="{{ field.name }}">{{ field.input.label }}{{ if field.isrequired }} <span class="text-danger">*</span>{{ end }}</label>
+            <input type="date" class="form-control"
+              formControlName="{{ field.name | to_camel_case }}"
+              id="{{ field.name }}">
+            {{- else }}
+            <label class="form-label" for="{{ field.name }}">{{ field.input.label }}{{ if field.isrequired }} <span class="text-danger">*</span>{{ end }}</label>
+            <input type="{{ field.input.type }}" class="form-control"
+              formControlName="{{ field.name | to_camel_case }}"
+              id="{{ field.name }}"
+              placeholder="{{ field.input.placeholder ?? "" }}">
+            {{- end }}
+          </div>
+          {{- end }}
+          {{- end }}
+        </div>
+        {{- end }}
+      </div>
+
+      <div class="card-footer d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-secondary" (click)="onCancel()" [disabled]="saving">
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving">
+          <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
+          {{ "{{" }} isEdit ? 'Actualizar' : 'Guardar' {{ "}}" }}
+        </button>
+      </div>
+    </div>
+  </form>
+</div>

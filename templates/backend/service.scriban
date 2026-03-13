@@ -1,0 +1,101 @@
+using AutoMapper;
+using {{ project.csharpnamespace }}.DTOs;
+using {{ project.csharpnamespace }}.Models;
+using {{ project.csharpnamespace }}.Repositories;
+
+namespace {{ project.csharpnamespace }}.Services;
+
+/// <summary>
+/// Servicio de {{ entity.name }} con reglas de negocio
+/// </summary>
+public class {{ entity.name }}Service : I{{ entity.name }}Service
+{
+    private readonly I{{ entity.name }}Repository _repository;
+    private readonly IMapper _mapper;
+
+    public {{ entity.name }}Service(I{{ entity.name }}Repository repository, IMapper mapper)
+    {
+        _repository = repository;
+        _mapper = mapper;
+    }
+
+    public async Task<(IEnumerable<{{ entity.name }}ResponseDto> Items, int TotalCount)> GetAllAsync(
+        int page = 1, int pageSize = 10, string? orderBy = null, bool orderDesc = false)
+    {
+        var items = await _repository.GetAllAsync(page, pageSize, orderBy, orderDesc);
+        var total = await _repository.GetTotalCountAsync();
+        return (_mapper.Map<IEnumerable<{{ entity.name }}ResponseDto>>(items), total);
+    }
+
+    public async Task<{{ entity.name }}ResponseDto?> GetByIdAsync({{ entity.primarykey?.csharptype ?? "int" }} id)
+    {
+        var entity = await _repository.GetByIdAsync(id);
+        return entity == null ? null : _mapper.Map<{{ entity.name }}ResponseDto>(entity);
+    }
+
+    public async Task<{{ entity.name }}ResponseDto> CreateAsync({{ entity.name }}CreateDto dto)
+    {
+        {{- for rule in entity.businessrules }}
+        {{- if rule.trigger == "antesDeInsertar" }}
+        // Regla de negocio: {{ rule.name }}
+        // Condición: {{ rule.condition }}
+        {{- if rule.action == "rechazar" }}
+        // TODO (IA): Implementar validación - {{ rule.condition }}
+        // throw new InvalidOperationException("{{ rule.message }}");
+        {{- end }}
+        {{- end }}
+        {{- end }}
+
+        var entity = _mapper.Map<{{ entity.name }}>(dto);
+        var created = await _repository.CreateAsync(entity);
+
+        {{- for rule in entity.businessrules }}
+        {{- if rule.trigger == "despuesDeInsertar" }}
+        // Regla de negocio post-inserción: {{ rule.name }}
+        // TODO (IA): {{ rule.condition }}
+        {{- end }}
+        {{- end }}
+
+        return _mapper.Map<{{ entity.name }}ResponseDto>(created);
+    }
+
+    public async Task<{{ entity.name }}ResponseDto> UpdateAsync({{ entity.primarykey?.csharptype ?? "int" }} id, {{ entity.name }}UpdateDto dto)
+    {
+        var existing = await _repository.GetByIdAsync(id)
+            ?? throw new KeyNotFoundException($"{{ entity.name }} con id {id} no encontrado");
+
+        {{- for rule in entity.businessrules }}
+        {{- if rule.trigger == "antesDeActualizar" }}
+        // Regla de negocio: {{ rule.name }}
+        // TODO (IA): Implementar - {{ rule.condition }}
+        {{- end }}
+        {{- end }}
+
+        _mapper.Map(dto, existing);
+        var updated = await _repository.UpdateAsync(existing);
+
+        {{- for rule in entity.businessrules }}
+        {{- if rule.trigger == "despuesDeActualizar" }}
+        // Regla de negocio post-actualización: {{ rule.name }}
+        // TODO (IA): {{ rule.condition }}
+        {{- end }}
+        {{- end }}
+
+        return _mapper.Map<{{ entity.name }}ResponseDto>(updated);
+    }
+
+    public async Task DeleteAsync({{ entity.primarykey?.csharptype ?? "int" }} id)
+    {
+        {{- for rule in entity.businessrules }}
+        {{- if rule.trigger == "antesDeEliminar" }}
+        // Regla de negocio: {{ rule.name }}
+        // TODO (IA): Implementar - {{ rule.condition }}
+        // throw new InvalidOperationException("{{ rule.message }}");
+        {{- end }}
+        {{- end }}
+
+        var deleted = await _repository.DeleteAsync(id);
+        if (!deleted)
+            throw new KeyNotFoundException($"{{ entity.name }} con id {id} no encontrado");
+    }
+}

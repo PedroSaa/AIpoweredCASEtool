@@ -1,0 +1,64 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace {{ project.csharpnamespace }}.DTOs;
+
+/// <summary>
+/// DTO para crear {{ entity.name }}
+/// </summary>
+public class {{ entity.name }}CreateDto
+{
+    {{- for field in entity.fields }}
+    {{- if !field.ispk }}
+    {{- if field.isrequired }}
+    [Required(ErrorMessage = "El campo {{ field.input.label  }} es requerido")]
+    {{- end }}
+    {{- if field.maxlength }}
+    [MaxLength({{ field.maxlength }})]
+    {{- end }}
+    {{- for val in field.validations }}
+    {{- if val.type == "email" }}
+    [EmailAddress]
+    {{- end }}
+    {{- end }}
+    public {{ field.csharptype }} {{ field.name }} { get; set; }{{ if field.type == "string" }} = string.Empty;{{ end }}
+    {{- end }}
+    {{- end }}
+}
+
+/// <summary>
+/// DTO para actualizar {{ entity.name }}
+/// </summary>
+public class {{ entity.name }}UpdateDto
+{
+    {{- for field in entity.fields }}
+    {{- if !field.ispk }}
+    {{- if field.isrequired }}
+    [Required(ErrorMessage = "El campo {{ field.input.label  }} es requerido")]
+    {{- end }}
+    {{- if field.maxlength }}
+    [MaxLength({{ field.maxlength }})]
+    {{- end }}
+    {{- for val in field.validations }}
+    {{- if val.type == "email" }}
+    [EmailAddress]
+    {{- end }}
+    {{- end }}
+    public {{ field.csharptype }} {{ field.name }} { get; set; }{{ if field.type == "string" }} = string.Empty;{{ end }}
+    {{- end }}
+    {{- end }}
+}
+
+/// <summary>
+/// DTO de respuesta para {{ entity.name }}
+/// </summary>
+public class {{ entity.name }}ResponseDto
+{
+    {{- for field in entity.fields }}
+    public {{ field.csharptype }} {{ field.name }} { get; set; }{{ if field.type == "string" }} = string.Empty;{{ end }}
+    {{- end }}
+    {{- for rel in entity.relations }}
+    {{- if rel.type == "ManyToOne" }}
+    public string? {{ rel.targetentity }}Nombre { get; set; }
+    {{- end }}
+    {{- end }}
+}

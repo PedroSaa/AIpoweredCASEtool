@@ -1,0 +1,95 @@
+using FluentValidation;
+using {{ project.csharpnamespace }}.DTOs;
+
+namespace {{ project.csharpnamespace }}.Validators;
+
+/// <summary>
+/// Validador FluentValidation para crear {{ entity.name }}
+/// </summary>
+public class {{ entity.name }}CreateValidator : AbstractValidator<{{ entity.name }}CreateDto>
+{
+    public {{ entity.name }}CreateValidator()
+    {
+        {{- for field in entity.fields }}
+        {{- if !field.ispk }}
+        {{- has_rules = field.isrequired || (field.validations | array.size) > 0 }}
+        {{- if has_rules }}
+        // Validaciones para {{ field.name }}
+        RuleFor(x => x.{{ field.name }})
+            {{- if field.isrequired && field.type == "string" }}
+            .NotEmpty().WithMessage("{{ field.input?.label ?? field.name }} es requerido")
+            {{- else if field.isrequired }}
+            .NotNull().WithMessage("{{ field.input?.label ?? field.name }} es requerido")
+            {{- end }}
+            {{- for val in field.validations }}
+            {{- if val.type == "minLength" }}
+            .MinimumLength({{ val.value }}).WithMessage("{{ val.message ?? "Mínimo " + val.value + " caracteres" }}")
+            {{- end }}
+            {{- if val.type == "maxLength" }}
+            .MaximumLength({{ val.value }}).WithMessage("{{ val.message ?? "Máximo " + val.value + " caracteres" }}")
+            {{- end }}
+            {{- if val.type == "min" }}
+            .GreaterThanOrEqualTo({{ val.value }}).WithMessage("{{ val.message ?? "Valor mínimo: " + val.value }}")
+            {{- end }}
+            {{- if val.type == "max" }}
+            .LessThanOrEqualTo({{ val.value }}).WithMessage("{{ val.message ?? "Valor máximo: " + val.value }}")
+            {{- end }}
+            {{- if val.type == "email" }}
+            .EmailAddress().WithMessage("{{ val.message ?? "Email inválido" }}")
+            {{- end }}
+            {{- if val.type == "regex" }}
+            .Matches(@"{{ val.regexexpression }}").WithMessage("{{ val.message ?? "Formato inválido" }}")
+            {{- end }}
+            {{- end }}
+            ;
+
+        {{- end }}
+        {{- end }}
+        {{- end }}
+    }
+}
+
+/// <summary>
+/// Validador FluentValidation para actualizar {{ entity.name }}
+/// </summary>
+public class {{ entity.name }}UpdateValidator : AbstractValidator<{{ entity.name }}UpdateDto>
+{
+    public {{ entity.name }}UpdateValidator()
+    {
+        {{- for field in entity.fields }}
+        {{- if !field.ispk }}
+        {{- has_rules = field.isrequired || (field.validations | array.size) > 0 }}
+        {{- if has_rules }}
+        RuleFor(x => x.{{ field.name }})
+            {{- if field.isrequired && field.type == "string" }}
+            .NotEmpty().WithMessage("{{ field.input?.label ?? field.name }} es requerido")
+            {{- else if field.isrequired }}
+            .NotNull().WithMessage("{{ field.input?.label ?? field.name }} es requerido")
+            {{- end }}
+            {{- for val in field.validations }}
+            {{- if val.type == "minLength" }}
+            .MinimumLength({{ val.value }}).WithMessage("{{ val.message ?? "Mínimo " + val.value + " caracteres" }}")
+            {{- end }}
+            {{- if val.type == "maxLength" }}
+            .MaximumLength({{ val.value }}).WithMessage("{{ val.message ?? "Máximo " + val.value + " caracteres" }}")
+            {{- end }}
+            {{- if val.type == "min" }}
+            .GreaterThanOrEqualTo({{ val.value }}).WithMessage("{{ val.message ?? "Valor mínimo: " + val.value }}")
+            {{- end }}
+            {{- if val.type == "max" }}
+            .LessThanOrEqualTo({{ val.value }}).WithMessage("{{ val.message ?? "Valor máximo: " + val.value }}")
+            {{- end }}
+            {{- if val.type == "email" }}
+            .EmailAddress().WithMessage("{{ val.message ?? "Email inválido" }}")
+            {{- end }}
+            {{- if val.type == "regex" }}
+            .Matches(@"{{ val.regexexpression }}").WithMessage("{{ val.message ?? "Formato inválido" }}")
+            {{- end }}
+            {{- end }}
+            ;
+
+        {{- end }}
+        {{- end }}
+        {{- end }}
+    }
+}

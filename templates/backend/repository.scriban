@@ -1,0 +1,101 @@
+using Microsoft.EntityFrameworkCore;
+using {{ project.csharpnamespace }}.Data;
+using {{ project.csharpnamespace }}.Models;
+
+namespace {{ project.csharpnamespace }}.Repositories;
+
+/// <summary>
+/// Repositorio de {{ entity.name }} con EF Core
+/// </summary>
+public class {{ entity.name }}Repository : I{{ entity.name }}Repository
+{
+    private readonly ApplicationDbContext _context;
+
+    public {{ entity.name }}Repository(ApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<IEnumerable<{{ entity.name }}>> GetAllAsync(int page = 1, int pageSize = 10, string? orderBy = null, bool orderDesc = false)
+    {
+        var query = _context.Set<{{ entity.name }}>()
+            {{- for rel in entity.relations }}
+            {{- if rel.type == "ManyToOne" && rel.eagerloading }}
+            .Include(x => x.{{ rel.targetentity }})
+            {{- end }}
+            {{- end }}
+            .AsQueryable();
+
+        // Ordenamiento
+        query = orderBy switch
+        {
+            {{- for field in entity.fields }}
+            {{- if !field.ispk }}
+            "{{ field.name }}" => orderDesc ? query.OrderByDescending(x => x.{{ field.name }}) : query.OrderBy(x => x.{{ field.name }}),
+            {{- end }}
+            {{- end }}
+            _ => query.OrderBy(x => x.{{ entity.primarykey?.name ?? "Id" }})
+        };
+
+        return await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+    }
+
+    public async Task<int> GetTotalCountAsync()
+    {
+        return await _context.Set<{{ entity.name }}>().CountAsync();
+    }
+
+    public async Task<{{ entity.name }}?> GetByIdAsync({{ entity.primarykey?.csharptype ?? "int" }} id)
+    {
+        return await _context.Set<{{ entity.name }}>()
+            {{- for rel in entity.relations }}
+            {{- if rel.type == "ManyToOne" && rel.eagerloading }}
+            .Include(x => x.{{ rel.targetentity }})
+            {{- end }}
+            {{- end }}
+            .FirstOrDefaultAsync(x => x.{{ entity.primarykey?.name ?? "Id" }} == id);
+    }
+
+    public async Task<{{ entity.name }}> CreateAsync({{ entity.name }} entity)
+    {
+        _context.Set<{{ entity.name }}>().Add(entity);
+        await _context.SaveChangesAsync();
+        return entity;
+    }
+
+    public async Task<{{ entity.name }}> UpdateAsync({{ entity.name }} entity)
+    {
+        _context.Set<{{ entity.name }}>().Update(entity);
+        await _context.SaveChangesAsync();
+        return entity;
+    }
+
+    public async Task<bool> DeleteAsync({{ entity.primarykey?.csharptype ?? "int" }} id)
+    {
+        var entity = await GetByIdAsync(id);
+        if (entity == null) return false;
+        _context.Set<{{ entity.name }}>().Remove(entity);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    {{- for field in entity.fields }}
+    {{- if field.isunique && !field.ispk }}
+    public async Task<bool> ExistsByAsync(string fieldName, {{ field.csharptype }} value, {{ entity.primarykey?.csharptype ?? "int" }}? excludeId = null)
+    {
+        var query = _context.Set<{{ entity.name }}>().AsQueryable();
+        // Implementación específica para campo {{ field.name }}
+        if (fieldName == "{{ field.name }}")
+        {
+            query = query.Where(x => x.{{ field.name }} == value);
+            if (excludeId.HasValue)
+                query = query.Where(x => x.{{ entity.primarykey?.name ?? "Id" }} != excludeId.Value);
+        }
+        return await query.AnyAsync();
+    }
+    {{- end }}
+    {{- end }}
+}

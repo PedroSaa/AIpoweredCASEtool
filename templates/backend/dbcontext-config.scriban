@@ -1,0 +1,70 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using {{ project.csharpnamespace }}.Models;
+
+namespace {{ project.csharpnamespace }}.Data;
+
+/// <summary>
+/// Configuración Fluent API de EF Core para {{ entity.name }}
+/// </summary>
+public class {{ entity.name }}Configuration : IEntityTypeConfiguration<{{ entity.name }}>
+{
+    public void Configure(EntityTypeBuilder<{{ entity.name }}> builder)
+    {
+        builder.ToTable("{{ entity.tablename }}");
+
+        {{- # Primary Key }}
+        {{- if entity.primarykey }}
+        builder.HasKey(x => x.{{ entity.primarykey.name }});
+        {{- if entity.primarykey.autoincrement }}
+        builder.Property(x => x.{{ entity.primarykey.name }})
+            .ValueGeneratedOnAdd();
+        {{- end }}
+        {{- end }}
+
+        {{- # Propiedades }}
+        {{- for field in entity.fields }}
+        {{- if !field.ispk }}
+        builder.Property(x => x.{{ field.name }})
+            {{- if field.isrequired }}
+            .IsRequired()
+            {{- end }}
+            {{- if field.maxlength }}
+            .HasMaxLength({{ field.maxlength }})
+            {{- end }}
+            {{- if field.type == "decimal" }}
+            .HasColumnType("decimal({{ field.precision ?? 18 }}, {{ field.scale ?? 2 }})")
+            {{- end }}
+            {{- if field.type == "string" && !field.maxlength }}
+            .HasColumnType("nvarchar(max)")
+            {{- end }}
+            ;
+
+        {{- if field.isunique }}
+        builder.HasIndex(x => x.{{ field.name }})
+            .IsUnique()
+            .HasDatabaseName("IX_{{ entity.tablename }}_{{ field.name }}");
+
+        {{- end }}
+        {{- end }}
+        {{- end }}
+
+        {{- # Relaciones }}
+        {{- for rel in entity.relations }}
+        {{- if rel.type == "ManyToOne" }}
+        builder.HasOne(x => x.{{ rel.targetentity }})
+            .WithMany()
+            .HasForeignKey(x => x.{{ rel.localfield }})
+            .OnDelete(DeleteBehavior.Restrict);
+
+        {{- end }}
+        {{- if rel.type == "OneToMany" }}
+        builder.HasMany(x => x.{{ rel.targetentity }}s)
+            .WithOne()
+            .HasForeignKey(x => x.{{ rel.localfield }})
+            .OnDelete(DeleteBehavior.Cascade);
+
+        {{- end }}
+        {{- end }}
+    }
+}
