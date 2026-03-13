@@ -71,7 +71,7 @@ Traditional CASE tools generate boilerplate code that requires significant manua
 | Validation | FluentValidation |
 | Documentation | Swagger / OpenAPI |
 | Authentication | JWT Bearer |
-| Frontend | Angular 17 + Angular Material |
+| Frontend | Angular 19 + Angular Material |
 | Database | SQL Server |
 | Template Engine | Scriban |
 
@@ -91,7 +91,7 @@ AIpoweredCASEtool/
 │
 ├── scaffolding/
 │   ├── backend/                  ← Base .NET 8 project scaffolding
-│   └── frontend/                 ← Base Angular 17 scaffolding
+│   └── frontend/                 ← Base Angular 19 scaffolding
 │
 ├── generator/
 │   └── AicaseCli/                ← .NET 8 CLI code generator
@@ -102,7 +102,7 @@ AIpoweredCASEtool/
 │
 └── templates/
     ├── backend/                  ← 9 Scriban templates (.NET 8)
-    ├── frontend/                 ← 7 Scriban templates (Angular 17)
+    ├── frontend/                 ← 7 Scriban templates (Angular 19)
     └── database/                 ← 2 Scriban templates (SQL Server)
 ```
 
@@ -174,7 +174,7 @@ aicase --input <project.json> --output <dir> [options]
 | Step | Status | Description |
 |---|---|---|
 | 1 | ✅ Done | JSON Schema (draft-07) for project definitions |
-| 2 | ✅ Done | Base scaffolding for .NET 8 + Angular 17 |
+| 2 | ✅ Done | Base scaffolding for .NET 8 + Angular 19 |
 | 3 | ✅ Done | Generator CLI with schema validation and parsing |
 | 4 | ✅ Done | Scriban templates for all layers |
 | 5 | 🔄 Planned | AI integration for complex business rule implementation |

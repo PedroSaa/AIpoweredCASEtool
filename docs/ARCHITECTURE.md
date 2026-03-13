@@ -41,7 +41,7 @@ AICASE (AI-powered Computer-Aided Software Engineering) follows a pipeline archi
 ║  │  │  Backend     │  │  Frontend        │   │                   ║
 ║  │  │  Generator   │  │  Generator       │   │                   ║
 ║  │  │              │  │                  │   │                   ║
-║  │  │  .NET 8 C#:  │  │  Angular 17:     │   │                   ║
+║  │  │  .NET 8 C#:  │  │  Angular 19:     │   │                   ║
 ║  │  │  • Models    │  │  • TS interfaces │   │                   ║
 ║  │  │  • DTOs      │  │  • Services      │   │                   ║
 ║  │  │  • Repos     │  │  • List comps    │   │                   ║
@@ -77,7 +77,7 @@ AICASE (AI-powered Computer-Aided Software Engineering) follows a pipeline archi
 ║  ┌────────────────────────────────────────────┐                   ║
 ║  │  output/                                   │                   ║
 ║  │  ├── backend/   (C# .NET 8 Web API)         │                   ║
-║  │  ├── frontend/  (Angular 17)                │                   ║
+║  │  ├── frontend/  (Angular 19)                │                   ║
 ║  │  └── database/  (SQL Server scripts)        │                   ║
 ║  └────────────────────────────────────────────┘                   ║
 ╚═══════════════════════════════════════════════════════════════════╝

@@ -20,7 +20,7 @@ public sealed class ProjectMetadata
 public sealed class TechnologyConfig
 {
     public string Backend  { get; set; } = "dotnet8";
-    public string Frontend { get; set; } = "angular17";
+    public string Frontend { get; set; } = "angular19";
     public string Database { get; set; } = "sqlserver";
 }
 

@@ -4,7 +4,7 @@ using AicaseCli.Models;
 namespace AicaseCli.Generators;
 
 /// <summary>
-/// Generates all Angular 17 frontend code using Scriban templates:
+/// Generates all Angular 19 frontend code using Scriban templates:
 /// TypeScript interfaces, Angular services, list components, form components,
 /// and routing module.
 /// </summary>

@@ -46,7 +46,7 @@ public static class ProjectParser
             Technologies = new TechnologyConfig
             {
                 Backend  = tech?["backend"]?.GetValue<string>()  ?? "dotnet8",
-                Frontend = tech?["frontend"]?.GetValue<string>() ?? "angular17",
+                Frontend = tech?["frontend"]?.GetValue<string>() ?? "angular19",
                 Database = tech?["database"]?.GetValue<string>() ?? "sqlserver"
             }
         };

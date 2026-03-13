@@ -5,7 +5,7 @@
     "description": "Sistema de gestión de ventas con clientes, productos y tipos de cliente",
     "technologies": {
       "backend": "dotnet8",
-      "frontend": "angular17",
+      "frontend": "angular19",
       "database": "sqlserver"
     }
   },

@@ -27,8 +27,8 @@
             },
             "frontend": {
               "type": "string",
-              "enum": ["angular17", "angular16", "react18", "vue3"],
-              "default": "angular17"
+              "enum": ["angular19", "angular18", "react18", "vue3"],
+              "default": "angular19"
             },
             "database": {
               "type": "string",

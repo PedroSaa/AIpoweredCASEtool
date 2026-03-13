@@ -47,13 +47,13 @@ Project metadata and technology stack selection.
 | `version` | string | ✅ | Semantic version (x.y.z) | `"1.0.0"` |
 | `description` | string | ❌ | Human-readable description | `"Sistema de ventas"` |
 | `technologies.backend` | enum | ❌ | Backend stack | `"dotnet8"` |
-| `technologies.frontend` | enum | ❌ | Frontend stack | `"angular17"` |
+| `technologies.frontend` | enum | ❌ | Frontend stack | `"angular19"` |
 | `technologies.database` | enum | ❌ | Database engine | `"sqlserver"` |
 
 ### Allowed Technology Values
 
 **backend:** `dotnet8`, `dotnet6`, `java-spring`, `node-express`  
-**frontend:** `angular17`, `angular16`, `react18`, `vue3`  
+**frontend:** `angular19`, `angular18`, `react18`, `vue3`  
 **database:** `sqlserver`, `postgresql`, `mysql`, `sqlite`
 
 ```json
@@ -63,7 +63,7 @@ Project metadata and technology stack selection.
   "description": "Sistema de gestión de ventas",
   "technologies": {
     "backend": "dotnet8",
-    "frontend": "angular17",
+    "frontend": "angular19",
     "database": "sqlserver"
   }
 }
