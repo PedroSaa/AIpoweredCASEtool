@@ -1,0 +1,65 @@
+{{~ # C# DTOs template – AICASE ~}}
+using System.ComponentModel.DataAnnotations;
+
+namespace {{ namespace }}.DTOs;
+
+// ─── Create DTO ──────────────────────────────────────────────────────────
+/// <summary>Payload accepted when creating a new {{ entity.name }}.</summary>
+public class {{ entity.name }}CreateDto
+{
+    {{~ for field in entity.fields ~}}
+    {{~ if field.is_pk == false ~}}
+    {{~ if field.required && field.type == "string" ~}}
+    [Required]
+    {{~ end ~}}
+    {{~ if field.length ~}}
+    [MaxLength({{ field.length }})]
+    {{~ end ~}}
+    {{~ if field.validation && field.validation.email ~}}
+    [EmailAddress]
+    {{~ end ~}}
+    {{~ if field.validation && field.validation.min_length ~}}
+    [MinLength({{ field.validation.min_length }})]
+    {{~ end ~}}
+    public {{ field.csharp_type }} {{ field.name_pascal }} { get; set; }{{~ if field.type == "string" ~}} = string.Empty;{{~ else ~}}{{~ end ~}}
+
+    {{~ end ~}}
+    {{~ end ~}}
+}
+
+// ─── Update DTO ──────────────────────────────────────────────────────────
+/// <summary>Payload accepted when updating an existing {{ entity.name }}.</summary>
+public class {{ entity.name }}UpdateDto
+{
+    {{~ for field in entity.fields ~}}
+    {{~ if field.is_pk == false ~}}
+    {{~ if field.required && field.type == "string" ~}}
+    [Required]
+    {{~ end ~}}
+    {{~ if field.length ~}}
+    [MaxLength({{ field.length }})]
+    {{~ end ~}}
+    {{~ if field.validation && field.validation.email ~}}
+    [EmailAddress]
+    {{~ end ~}}
+    public {{ field.csharp_type }} {{ field.name_pascal }} { get; set; }{{~ if field.type == "string" ~}} = string.Empty;{{~ else ~}}{{~ end ~}}
+
+    {{~ end ~}}
+    {{~ end ~}}
+}
+
+// ─── Response DTO ─────────────────────────────────────────────────────────
+/// <summary>Data returned in API responses for {{ entity.name }}.</summary>
+public class {{ entity.name }}ResponseDto
+{
+    {{~ for field in entity.fields ~}}
+    public {{ field.csharp_type }} {{ field.name_pascal }} { get; set; }{{~ if field.type == "string" ~}} = string.Empty;{{~ else ~}}{{~ end ~}}
+
+    {{~ end ~}}
+    {{~ # Include navigation label fields for FK relations ~}}
+    {{~ for rel in entity.relations ~}}
+    {{~ if rel.type == "ManyToOne" ~}}
+    public string? {{ rel.target }}Nombre { get; set; }
+    {{~ end ~}}
+    {{~ end ~}}
+}

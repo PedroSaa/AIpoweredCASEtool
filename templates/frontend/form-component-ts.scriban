@@ -1,0 +1,161 @@
+{{~ # Angular Form Component TypeScript – AICASE ~}}
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { FormBuilder, FormGroup, Validators, AbstractControl } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import { {{ entity.name }}, {{ entity.name }}CreateDto, {{ entity.name }}UpdateDto } from '../../models/{{ kebab_name }}.model';
+import { {{ entity.name }}Service } from '../../services/{{ kebab_name }}.service';
+{{~ for rel in entity.relations ~}}
+{{~ if rel.type == "ManyToOne" ~}}
+import { {{ rel.target }}Service } from '../../services/{{ rel.target | string.downcase }}.service';
+import { {{ rel.target }} } from '../../models/{{ rel.target | string.downcase }}.model';
+{{~ end ~}}
+{{~ end ~}}
+
+@Component({
+  selector: 'app-{{ kebab_name }}-form',
+  templateUrl: './{{ kebab_name }}-form.component.html'
+})
+export class {{ entity.name }}FormComponent implements OnInit, OnDestroy {
+  private readonly destroy$ = new Subject<void>();
+
+  form!: FormGroup;
+  isEditMode = false;
+  editId?: number;
+  isLoading = false;
+  isSaving = false;
+  title = '{{ entity.screen_config.form.title }}';
+
+  {{~ # Dropdown data sources ~}}
+  {{~ for rel in entity.relations ~}}
+  {{~ if rel.type == "ManyToOne" ~}}
+  {{ rel.target | string.downcase }}Options: {{ rel.target }}[] = [];
+  {{~ end ~}}
+  {{~ end ~}}
+
+  constructor(
+    private fb: FormBuilder,
+    private service: {{ entity.name }}Service,
+    private route: ActivatedRoute,
+    private router: Router,
+    private snackBar: MatSnackBar,
+    {{~ for rel in entity.relations ~}}
+    {{~ if rel.type == "ManyToOne" ~}}
+    private {{ rel.target | string.downcase }}Service: {{ rel.target }}Service,
+    {{~ end ~}}
+    {{~ end ~}}
+  ) {}
+
+  ngOnInit(): void {
+    this.buildForm();
+    this.loadDropdownData();
+
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      this.isEditMode = true;
+      this.editId = +id;
+      this.title = 'Editar {{ entity.screen_config.form.title }}';
+      this.loadData(this.editId);
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  buildForm(): void {
+    this.form = this.fb.group({
+      {{~ for field in entity.fields ~}}
+      {{~ if !field.is_pk ~}}
+      {{ field.name }}: [
+        {{~ if field.default_value ~}}{{ field.default_value }}{{~ else if field.type == "bool" ~}}false{{~ else ~}}null{{~ end ~}},
+        [
+          {{~ if field.required ~}}Validators.required,{{~ end ~}}
+          {{~ if field.validation && field.validation.max_length ~}}Validators.maxLength({{ field.validation.max_length }}),{{~ else if field.length ~}}Validators.maxLength({{ field.length }}),{{~ end ~}}
+          {{~ if field.validation && field.validation.min_length ~}}Validators.minLength({{ field.validation.min_length }}),{{~ end ~}}
+          {{~ if field.validation && field.validation.email ~}}Validators.email,{{~ end ~}}
+          {{~ if field.validation && field.validation.regex ~}}Validators.pattern(/{{ field.validation.regex }}/),{{~ end ~}}
+          {{~ if field.validation && field.validation.min ~}}Validators.min({{ field.validation.min }}),{{~ end ~}}
+          {{~ if field.validation && field.validation.max ~}}Validators.max({{ field.validation.max }}),{{~ end ~}}
+        ]
+      ],
+      {{~ end ~}}
+      {{~ end ~}}
+    });
+  }
+
+  loadDropdownData(): void {
+    {{~ for rel in entity.relations ~}}
+    {{~ if rel.type == "ManyToOne" ~}}
+    this.{{ rel.target | string.downcase }}Service.getAll({ pageSize: 1000 })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(r => this.{{ rel.target | string.downcase }}Options = r.data);
+    {{~ end ~}}
+    {{~ end ~}}
+  }
+
+  loadData(id: number): void {
+    this.isLoading = true;
+    this.service.getById(id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: item => {
+          this.form.patchValue(item);
+          this.isLoading = false;
+        },
+        error: () => {
+          this.snackBar.open('Error al cargar el registro.', 'Cerrar', { duration: 4000 });
+          this.isLoading = false;
+        }
+      });
+  }
+
+  onSubmit(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    this.isSaving = true;
+    const value = this.form.value;
+
+    const request$ = this.isEditMode && this.editId
+      ? this.service.update(this.editId, value as {{ entity.name }}UpdateDto)
+      : this.service.create(value as {{ entity.name }}CreateDto);
+
+    request$.pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        this.snackBar.open(
+          this.isEditMode ? 'Registro actualizado.' : 'Registro creado.',
+          'Cerrar', { duration: 3000 }
+        );
+        this.router.navigate(['/{{ kebab_name }}']);
+      },
+      error: err => {
+        const msg = err?.error?.message ?? 'Error al guardar el registro.';
+        this.snackBar.open(msg, 'Cerrar', { duration: 5000 });
+        this.isSaving = false;
+      }
+    });
+  }
+
+  onCancel(): void {
+    this.router.navigate(['/{{ kebab_name }}']);
+  }
+
+  getFieldError(fieldName: string): string | null {
+    const control: AbstractControl | null = this.form.get(fieldName);
+    if (!control || !control.invalid || !control.touched) return null;
+    if (control.errors?.['required'])   return 'Este campo es requerido.';
+    if (control.errors?.['email'])      return 'Ingrese un email válido.';
+    if (control.errors?.['maxlength'])  return `Máximo ${control.errors['maxlength'].requiredLength} caracteres.`;
+    if (control.errors?.['minlength'])  return `Mínimo ${control.errors['minlength'].requiredLength} caracteres.`;
+    if (control.errors?.['min'])        return `El valor mínimo es ${control.errors['min'].min}.`;
+    if (control.errors?.['max'])        return `El valor máximo es ${control.errors['max'].max}.`;
+    if (control.errors?.['pattern'])    return 'El formato ingresado no es válido.';
+    return 'Campo inválido.';
+  }
+}

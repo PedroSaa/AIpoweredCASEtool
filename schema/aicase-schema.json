@@ -1,0 +1,403 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aicase.dev/schema/v1/aicase-schema.json",
+  "title": "AICASE Project Schema",
+  "description": "Formal JSON Schema for AICASE (AI-powered Computer-Aided Software Engineering) project definitions",
+  "type": "object",
+  "required": ["project", "entities"],
+  "additionalProperties": false,
+  "properties": {
+    "project": {
+      "type": "object",
+      "description": "Project metadata and global settings",
+      "required": ["name", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "description": "Project name (used as namespace)" },
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$", "description": "Semantic version, e.g. 1.0.0" },
+        "description": { "type": "string" },
+        "technologies": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "backend": {
+              "type": "string",
+              "enum": ["dotnet8", "dotnet6", "java-spring", "node-express"],
+              "default": "dotnet8"
+            },
+            "frontend": {
+              "type": "string",
+              "enum": ["angular17", "angular16", "react18", "vue3"],
+              "default": "angular17"
+            },
+            "database": {
+              "type": "string",
+              "enum": ["sqlserver", "postgresql", "mysql", "sqlite"],
+              "default": "sqlserver"
+            }
+          }
+        }
+      }
+    },
+    "globalConfig": {
+      "type": "object",
+      "description": "Global configuration for auth, roles and database",
+      "additionalProperties": false,
+      "properties": {
+        "authentication": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "type": { "type": "string", "enum": ["jwt", "oauth2", "apikey"], "default": "jwt" },
+            "jwtSecret": { "type": "string", "description": "Placeholder or actual secret for JWT signing" },
+            "jwtExpireMinutes": { "type": "integer", "minimum": 1, "default": 60 },
+            "refreshTokenEnabled": { "type": "boolean", "default": true }
+          }
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "description": { "type": "string" },
+              "isDefault": { "type": "boolean", "default": false }
+            }
+          }
+        },
+        "database": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "schema": { "type": "string", "default": "dbo" },
+            "connectionStringPlaceholder": { "type": "string" },
+            "enableMigrations": { "type": "boolean", "default": true },
+            "enableSeedData": { "type": "boolean", "default": false }
+          }
+        },
+        "cors": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "allowedOrigins": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "entities": {
+      "type": "array",
+      "description": "List of domain entities to generate",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/entity" }
+    }
+  },
+  "definitions": {
+    "entity": {
+      "type": "object",
+      "required": ["name", "table", "fields"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "description": "Entity class name (PascalCase)" },
+        "table": { "type": "string", "minLength": 1, "description": "Database table name" },
+        "description": { "type": "string" },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/field" }
+        },
+        "relations": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/relation" }
+        },
+        "businessRules": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/businessRule" }
+        },
+        "screenConfig": { "$ref": "#/definitions/screenConfig" },
+        "apiConfig": { "$ref": "#/definitions/apiConfig" }
+      }
+    },
+    "field": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "description": "Field name (camelCase)" },
+        "type": {
+          "type": "string",
+          "enum": ["string", "int", "decimal", "date", "bool", "guid"],
+          "description": "Logical field type"
+        },
+        "length": { "type": "integer", "minimum": 1, "description": "Max length for string fields" },
+        "precision": { "type": "integer", "minimum": 1, "description": "Decimal precision, e.g. 18" },
+        "scale": { "type": "integer", "minimum": 0, "description": "Decimal scale, e.g. 2" },
+        "required": { "type": "boolean", "default": false },
+        "unique": { "type": "boolean", "default": false },
+        "isPK": { "type": "boolean", "default": false, "description": "Is primary key" },
+        "autoIncrement": { "type": "boolean", "default": false },
+        "defaultValue": { "description": "Default value for the field" },
+        "description": { "type": "string" },
+        "validation": { "$ref": "#/definitions/fieldValidation" },
+        "ui": { "$ref": "#/definitions/uiInput" }
+      }
+    },
+    "fieldValidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "minLength": { "type": "integer", "minimum": 0 },
+        "maxLength": { "type": "integer", "minimum": 1 },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "email": { "type": "boolean" },
+        "regex": { "type": "string", "description": "Regular expression pattern" },
+        "regexMessage": { "type": "string" },
+        "maxDate": { "type": "string", "description": "Max date ISO 8601 or 'today'" },
+        "minDate": { "type": "string", "description": "Min date ISO 8601 or 'today'" },
+        "custom": { "type": "string", "description": "Custom validation expression or function name" }
+      }
+    },
+    "uiInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["text", "email", "number", "datepicker", "dropdown", "checkbox", "textarea", "radio", "autocomplete", "password", "colorpicker", "fileinput"]
+        },
+        "label": { "type": "string" },
+        "placeholder": { "type": "string" },
+        "hint": { "type": "string" },
+        "readonly": { "type": "boolean", "default": false },
+        "hidden": { "type": "boolean", "default": false },
+        "dataSource": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "entity": { "type": "string", "description": "Entity name to load options from" },
+            "valueField": { "type": "string" },
+            "labelField": { "type": "string" },
+            "staticOptions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["value", "label"],
+                "properties": {
+                  "value": {},
+                  "label": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "relation": {
+      "type": "object",
+      "required": ["type", "target"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["ManyToOne", "OneToMany", "ManyToMany"],
+          "description": "Relation cardinality"
+        },
+        "target": { "type": "string", "description": "Target entity name" },
+        "field": { "type": "string", "description": "Foreign key field name on this entity" },
+        "targetField": { "type": "string", "description": "Field on target entity (usually PK)" },
+        "joinTable": { "type": "string", "description": "Join table name for ManyToMany" },
+        "cascade": { "type": "boolean", "default": false },
+        "nullable": { "type": "boolean", "default": true },
+        "eager": { "type": "boolean", "default": false }
+      }
+    },
+    "businessRule": {
+      "type": "object",
+      "required": ["name", "trigger"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "description": "Rule identifier (camelCase)" },
+        "description": { "type": "string" },
+        "trigger": {
+          "type": "string",
+          "enum": [
+            "beforeInsert", "afterInsert",
+            "beforeUpdate", "afterUpdate",
+            "beforeDelete", "afterDelete",
+            "onValidate", "onLoad"
+          ]
+        },
+        "condition": { "type": "string", "description": "Condition expression (C# expression string)" },
+        "action": {
+          "type": "string",
+          "enum": ["throw", "log", "setField", "callService", "sendNotification", "custom"],
+          "description": "Action to execute when condition is met"
+        },
+        "message": { "type": "string", "description": "Error/info message" },
+        "targetField": { "type": "string", "description": "Field to set for setField action" },
+        "targetValue": { "description": "Value to set for setField action" },
+        "aiGenerate": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, AI will generate the implementation of this business rule"
+        }
+      }
+    },
+    "screenConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "list": { "$ref": "#/definitions/listConfig" },
+        "form": { "$ref": "#/definitions/formConfig" }
+      }
+    },
+    "listConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string" },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["field"],
+            "additionalProperties": false,
+            "properties": {
+              "field": { "type": "string" },
+              "header": { "type": "string" },
+              "sortable": { "type": "boolean", "default": true },
+              "filterable": { "type": "boolean", "default": false },
+              "width": { "type": "string" },
+              "pipe": { "type": "string", "description": "Angular pipe to apply, e.g. date, currency, uppercase" }
+            }
+          }
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "label"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "label": { "type": "string" },
+              "icon": { "type": "string" },
+              "color": { "type": "string", "enum": ["primary", "accent", "warn", "default"] },
+              "roles": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "filters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["field"],
+            "additionalProperties": false,
+            "properties": {
+              "field": { "type": "string" },
+              "label": { "type": "string" },
+              "type": { "type": "string", "enum": ["text", "date", "daterange", "select", "checkbox"] }
+            }
+          }
+        },
+        "pagination": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "pageSize": { "type": "integer", "default": 10 },
+            "pageSizeOptions": { "type": "array", "items": { "type": "integer" } }
+          }
+        },
+        "sort": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "field": { "type": "string" },
+            "direction": { "type": "string", "enum": ["asc", "desc"], "default": "asc" }
+          }
+        }
+      }
+    },
+    "formConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string" },
+        "layout": {
+          "type": "string",
+          "enum": ["single-column", "two-columns", "three-columns", "sectioned"],
+          "default": "two-columns"
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["title", "fields"],
+            "additionalProperties": false,
+            "properties": {
+              "title": { "type": "string" },
+              "icon": { "type": "string" },
+              "fields": { "type": "array", "items": { "type": "string" } },
+              "collapsible": { "type": "boolean", "default": false }
+            }
+          }
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "colspan": { "type": "integer", "minimum": 1, "maximum": 3, "default": 1 },
+              "order": { "type": "integer" }
+            }
+          }
+        }
+      }
+    },
+    "apiConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "route": { "type": "string", "description": "API route prefix, e.g. /api/clientes" },
+        "operations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["getAll", "getById", "create", "update", "delete", "search", "export"]
+          }
+        },
+        "authentication": { "type": "boolean", "default": true },
+        "roles": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "getAll": { "type": "array", "items": { "type": "string" } },
+            "getById": { "type": "array", "items": { "type": "string" } },
+            "create": { "type": "array", "items": { "type": "string" } },
+            "update": { "type": "array", "items": { "type": "string" } },
+            "delete": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "versioning": { "type": "string", "description": "API version, e.g. v1" },
+        "rateLimiting": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "requestsPerMinute": { "type": "integer" }
+          }
+        }
+      }
+    }
+  }
+}

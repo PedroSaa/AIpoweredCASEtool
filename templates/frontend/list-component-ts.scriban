@@ -1,0 +1,127 @@
+{{~ # Angular List Component TypeScript – AICASE ~}}
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { MatPaginator, PageEvent } from '@angular/material/paginator';
+import { MatSort, Sort } from '@angular/material/sort';
+import { MatTableDataSource } from '@angular/material/table';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import { Router } from '@angular/router';
+import { {{ entity.name }} } from '../../models/{{ kebab_name }}.model';
+import { {{ entity.name }}Service } from '../../services/{{ kebab_name }}.service';
+
+@Component({
+  selector: 'app-{{ kebab_name }}-list',
+  templateUrl: './{{ kebab_name }}-list.component.html'
+})
+export class {{ entity.name }}ListComponent implements OnInit, OnDestroy {
+  private readonly destroy$ = new Subject<void>();
+
+  displayedColumns: string[] = [
+    {{~ for col in entity.screen_config.list.columns ~}}
+    '{{ col.field }}',
+    {{~ end ~}}
+    'actions'
+  ];
+
+  dataSource = new MatTableDataSource<{{ entity.name }}>([]);
+  totalItems = 0;
+  pageSize = {{ entity.screen_config.list.pagination.page_size }};
+  pageIndex = 0;
+  isLoading = false;
+
+  {{~ # Filter form controls ~}}
+  searchText = '';
+
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatSort) sort!: MatSort;
+
+  constructor(
+    private service: {{ entity.name }}Service,
+    private router: Router,
+    private dialog: MatDialog,
+    private snackBar: MatSnackBar
+  ) {}
+
+  ngOnInit(): void {
+    this.loadData();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  loadData(): void {
+    this.isLoading = true;
+    this.service.getAll({
+      page: this.pageIndex + 1,
+      pageSize: this.pageSize,
+      {{~ if entity.screen_config.list.sort ~}}
+      sortField: '{{ entity.screen_config.list.sort.field }}',
+      sortDirection: '{{ entity.screen_config.list.sort.direction }}'
+      {{~ end ~}}
+    })
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: result => {
+        this.dataSource.data = result.data;
+        this.totalItems = result.total;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.snackBar.open('Error al cargar los datos.', 'Cerrar', { duration: 4000 });
+        this.isLoading = false;
+      }
+    });
+  }
+
+  onPageChange(event: PageEvent): void {
+    this.pageIndex = event.pageIndex;
+    this.pageSize  = event.pageSize;
+    this.loadData();
+  }
+
+  onSortChange(event: Sort): void {
+    this.pageIndex = 0;
+    this.loadData();
+  }
+
+  onNew(): void {
+    this.router.navigate(['/{{ kebab_name }}/new']);
+  }
+
+  onEdit(row: {{ entity.name }}): void {
+    this.router.navigate(['/{{ kebab_name }}/edit', row.{{ entity.primary_key.name }}]);
+  }
+
+  onDelete(row: {{ entity.name }}): void {
+    if (!confirm(`¿Desea eliminar este registro?`)) return;
+    this.service.delete(row.{{ entity.primary_key.name }} as number)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.snackBar.open('Registro eliminado.', 'Cerrar', { duration: 3000 });
+          this.loadData();
+        },
+        error: err => {
+          const msg = err?.error?.message ?? 'Error al eliminar el registro.';
+          this.snackBar.open(msg, 'Cerrar', { duration: 5000 });
+        }
+      });
+  }
+
+  {{~ if array.contains entity.api_config.operations "export" ~}}
+  onExport(): void {
+    this.service.export().subscribe(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a   = document.createElement('a');
+      a.href     = url;
+      a.download = '{{ entity.name }}_export.xlsx';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    });
+  }
+  {{~ end ~}}
+}

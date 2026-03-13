@@ -1,0 +1,44 @@
+{{~ # Angular Service template – AICASE ~}}
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { ApiService, PagedResult, QueryParams } from '../services/api.service';
+import { {{ entity.name }}, {{ entity.name }}CreateDto, {{ entity.name }}UpdateDto } from '../models/{{ kebab_name }}.model';
+
+@Injectable({ providedIn: 'root' })
+export class {{ entity.name }}Service {
+  private readonly resource = '{{ entity.api_config.route | string.replace "/api/v1/" "" }}';
+
+  constructor(private api: ApiService) {}
+
+  getAll(params?: QueryParams): Observable<PagedResult<{{ entity.name }}>> {
+    return this.api.getAll<{{ entity.name }}>(this.resource, params);
+  }
+
+  getById(id: number): Observable<{{ entity.name }}> {
+    return this.api.getById<{{ entity.name }}>(this.resource, id);
+  }
+
+  create(dto: {{ entity.name }}CreateDto): Observable<{{ entity.name }}> {
+    return this.api.create<{{ entity.name }}CreateDto, {{ entity.name }}>(this.resource, dto);
+  }
+
+  update(id: number, dto: {{ entity.name }}UpdateDto): Observable<{{ entity.name }}> {
+    return this.api.update<{{ entity.name }}UpdateDto, {{ entity.name }}>(this.resource, id, dto);
+  }
+
+  delete(id: number): Observable<void> {
+    return this.api.delete(this.resource, id);
+  }
+
+  {{~ if array.contains entity.api_config.operations "search" ~}}
+  search(query: string, params?: QueryParams): Observable<PagedResult<{{ entity.name }}>> {
+    return this.api.search<{{ entity.name }}>(this.resource, query, params);
+  }
+  {{~ end ~}}
+
+  {{~ if array.contains entity.api_config.operations "export" ~}}
+  export(params?: QueryParams): Observable<Blob> {
+    return this.api.export(this.resource, params);
+  }
+  {{~ end ~}}
+}

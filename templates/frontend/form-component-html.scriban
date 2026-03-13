@@ -1,0 +1,121 @@
+{{~ # Angular Form Component HTML – AICASE ~}}
+<div class="page-container">
+  <div class="page-header">
+    <h1>{{ "{{ title }}" }}</h1>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" *ngIf="!isLoading">
+    <mat-card>
+      <mat-card-content>
+
+        {{~ if entity.screen_config.form.sections.size > 0 ~}}
+        {{~ for section in entity.screen_config.form.sections ~}}
+        <!-- Section: {{ section.title }} -->
+        <mat-expansion-panel [expanded]="{{ !section.collapsible }}">
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              {{~ if section.icon ~}}<mat-icon>{{ section.icon }}</mat-icon>{{~ end ~}}
+              {{ section.title }}
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+          <div class="form-grid">
+            {{~ for fieldName in section.fields ~}}
+            {{~ for field in entity.fields ~}}
+            {{~ if field.name == fieldName ~}}
+            <!-- Field: {{ field.name }} -->
+            <mat-form-field appearance="outline" class="form-field">
+              {{~ if field.ui.type == "textarea" ~}}
+              <mat-label>{{ field.ui.label }}</mat-label>
+              <textarea matInput formControlName="{{ field.name }}" rows="3"
+                placeholder="{{ field.ui.placeholder }}"
+                {{~ if field.ui.readonly ~}}[readonly]="true"{{~ end ~}}>
+              </textarea>
+              {{~ else if field.ui.type == "datepicker" ~}}
+              <mat-label>{{ field.ui.label }}</mat-label>
+              <input matInput [matDatepicker]="picker_{{ field.name }}" formControlName="{{ field.name }}"
+                placeholder="{{ field.ui.placeholder }}"
+                {{~ if field.ui.readonly ~}}[readonly]="true"{{~ end ~}}>
+              <mat-datepicker-toggle matSuffix [for]="picker_{{ field.name }}"></mat-datepicker-toggle>
+              <mat-datepicker #picker_{{ field.name }}></mat-datepicker>
+              {{~ else if field.ui.type == "dropdown" ~}}
+              <mat-label>{{ field.ui.label }}</mat-label>
+              <mat-select formControlName="{{ field.name }}" placeholder="{{ field.ui.placeholder }}">
+                {{~ if field.ui.data_source && field.ui.data_source.static_options.size > 0 ~}}
+                {{~ for opt in field.ui.data_source.static_options ~}}
+                <mat-option value="{{ opt.value }}">{{ opt.label }}</mat-option>
+                {{~ end ~}}
+                {{~ else if field.ui.data_source && field.ui.data_source.entity ~}}
+                <mat-option *ngFor="let item of {{ field.ui.data_source.entity | string.downcase }}Options"
+                  [value]="item.{{ field.ui.data_source.value_field }}">
+                  {{ "{{ item." + field.ui.data_source.label_field + " }}" }}
+                </mat-option>
+                {{~ end ~}}
+              </mat-select>
+              {{~ else if field.ui.type == "checkbox" ~}}
+              </mat-form-field>
+              <mat-checkbox formControlName="{{ field.name }}" class="form-field">{{ field.ui.label }}</mat-checkbox>
+              <mat-form-field appearance="outline" style="display:none">
+              {{~ else if field.ui.type == "radio" ~}}
+              </mat-form-field>
+              <div class="form-field">
+                <label class="field-label">{{ field.ui.label }}</label>
+                <mat-radio-group formControlName="{{ field.name }}" class="radio-group">
+                  {{~ for opt in field.ui.data_source.static_options ~}}
+                  <mat-radio-button value="{{ opt.value }}">{{ opt.label }}</mat-radio-button>
+                  {{~ end ~}}
+                </mat-radio-group>
+              </div>
+              <mat-form-field appearance="outline" style="display:none">
+              {{~ else ~}}
+              <mat-label>{{ field.ui.label }}</mat-label>
+              <input matInput formControlName="{{ field.name }}"
+                type="{{ field.ui.type }}"
+                placeholder="{{ field.ui.placeholder }}"
+                {{~ if field.ui.readonly ~}}[readonly]="true"{{~ end ~}}>
+              {{~ end ~}}
+              <mat-hint *ngIf="{{ '"' + (field.ui.hint ?? '') + '"' }} && !form.get('{{ field.name }}')?.errors">
+                {{ field.ui.hint }}
+              </mat-hint>
+              <mat-error>{{ "{{ getFieldError('" + field.name + "') }}" }}</mat-error>
+            </mat-form-field>
+            {{~ end ~}}
+            {{~ end ~}}
+            {{~ end ~}}
+          </div>
+        </mat-expansion-panel>
+        {{~ end ~}}
+
+        {{~ else ~}}
+        <!-- Default layout: all fields in a grid -->
+        <div class="form-grid">
+          {{~ for field in entity.fields ~}}
+          {{~ if !field.is_pk ~}}
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>{{ field.ui.label }}</mat-label>
+            <input matInput formControlName="{{ field.name }}"
+              placeholder="{{ field.ui.placeholder }}">
+            <mat-error>{{ "{{ getFieldError('" + field.name + "') }}" }}</mat-error>
+          </mat-form-field>
+          {{~ end ~}}
+          {{~ end ~}}
+        </div>
+        {{~ end ~}}
+
+      </mat-card-content>
+
+      <mat-card-actions align="end">
+        <button mat-stroked-button type="button" (click)="onCancel()" [disabled]="isSaving">
+          Cancelar
+        </button>
+        <button mat-raised-button color="primary" type="submit" [disabled]="isSaving">
+          <mat-spinner diameter="18" *ngIf="isSaving"></mat-spinner>
+          <span *ngIf="!isSaving">{{ "{{ isEditMode ? 'Actualizar' : 'Guardar' }}" }}</span>
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  </form>
+</div>

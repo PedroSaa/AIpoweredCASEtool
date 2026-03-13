@@ -1,0 +1,632 @@
+{
+  "project": {
+    "name": "SistemaVentas",
+    "version": "1.0.0",
+    "description": "Sistema de gestión de ventas con clientes, productos y tipos de cliente",
+    "technologies": {
+      "backend": "dotnet8",
+      "frontend": "angular17",
+      "database": "sqlserver"
+    }
+  },
+  "globalConfig": {
+    "authentication": {
+      "enabled": true,
+      "type": "jwt",
+      "jwtSecret": "{JWT_SECRET_PLACEHOLDER}",
+      "jwtExpireMinutes": 480,
+      "refreshTokenEnabled": true
+    },
+    "roles": [
+      { "name": "Admin",   "description": "Administrador del sistema", "isDefault": false },
+      { "name": "Vendedor","description": "Agente de ventas",          "isDefault": true  },
+      { "name": "Gerente", "description": "Gerente de área",           "isDefault": false }
+    ],
+    "database": {
+      "schema": "dbo",
+      "connectionStringPlaceholder": "Server={SERVER};Database=SistemaVentas;User Id={USER};Password={PASSWORD};",
+      "enableMigrations": true,
+      "enableSeedData": true
+    },
+    "cors": {
+      "allowedOrigins": ["http://localhost:4200", "https://ventas.miempresa.com"]
+    }
+  },
+  "entities": [
+    {
+      "name": "TipoCliente",
+      "table": "TiposCliente",
+      "description": "Categorías o segmentos de clientes",
+      "fields": [
+        {
+          "name": "id",
+          "type": "int",
+          "isPK": true,
+          "autoIncrement": true,
+          "required": true,
+          "description": "Identificador único",
+          "ui": { "type": "number", "label": "ID", "readonly": true, "hidden": false }
+        },
+        {
+          "name": "codigo",
+          "type": "string",
+          "length": 10,
+          "required": true,
+          "unique": true,
+          "description": "Código del tipo de cliente",
+          "validation": {
+            "minLength": 2,
+            "maxLength": 10,
+            "regex": "^[A-Z0-9]+$",
+            "regexMessage": "El código solo puede contener letras mayúsculas y números"
+          },
+          "ui": { "type": "text", "label": "Código", "placeholder": "Ej: VIP, STD" }
+        },
+        {
+          "name": "nombre",
+          "type": "string",
+          "length": 100,
+          "required": true,
+          "description": "Nombre descriptivo del tipo",
+          "validation": { "minLength": 3, "maxLength": 100 },
+          "ui": { "type": "text", "label": "Nombre", "placeholder": "Ej: Cliente VIP" }
+        },
+        {
+          "name": "descuento",
+          "type": "decimal",
+          "precision": 5,
+          "scale": 2,
+          "required": false,
+          "description": "Porcentaje de descuento aplicable (0-100)",
+          "validation": { "min": 0, "max": 100 },
+          "ui": { "type": "number", "label": "Descuento (%)", "placeholder": "0.00" }
+        },
+        {
+          "name": "activo",
+          "type": "bool",
+          "required": true,
+          "defaultValue": true,
+          "description": "Indica si el tipo está activo",
+          "ui": { "type": "checkbox", "label": "Activo" }
+        },
+        {
+          "name": "fechaCreacion",
+          "type": "date",
+          "required": true,
+          "description": "Fecha de creación del registro",
+          "ui": { "type": "datepicker", "label": "Fecha de Creación", "readonly": true }
+        }
+      ],
+      "businessRules": [
+        {
+          "name": "validateDescuento",
+          "description": "El descuento no puede ser negativo ni superar 100%",
+          "trigger": "beforeInsert",
+          "condition": "entity.descuento < 0 || entity.descuento > 100",
+          "action": "throw",
+          "message": "El descuento debe estar entre 0 y 100"
+        },
+        {
+          "name": "setFechaCreacion",
+          "description": "Asignar fecha de creación automáticamente",
+          "trigger": "beforeInsert",
+          "condition": "true",
+          "action": "setField",
+          "targetField": "fechaCreacion",
+          "targetValue": "DateTime.UtcNow"
+        }
+      ],
+      "screenConfig": {
+        "list": {
+          "title": "Tipos de Cliente",
+          "columns": [
+            { "field": "codigo",   "header": "Código",   "sortable": true, "filterable": true, "width": "120px" },
+            { "field": "nombre",   "header": "Nombre",   "sortable": true, "filterable": true },
+            { "field": "descuento","header": "Descuento","sortable": true, "pipe": "number:'1.2-2'" },
+            { "field": "activo",   "header": "Activo",   "sortable": false }
+          ],
+          "actions": [
+            { "name": "edit",   "label": "Editar",   "icon": "edit",   "color": "primary", "roles": ["Admin","Gerente"] },
+            { "name": "delete", "label": "Eliminar", "icon": "delete", "color": "warn",    "roles": ["Admin"] }
+          ],
+          "filters": [
+            { "field": "nombre", "label": "Buscar por nombre", "type": "text" },
+            { "field": "activo", "label": "Solo activos",      "type": "checkbox" }
+          ],
+          "pagination": { "enabled": true, "pageSize": 10, "pageSizeOptions": [5,10,25] },
+          "sort": { "field": "nombre", "direction": "asc" }
+        },
+        "form": {
+          "title": "Tipo de Cliente",
+          "layout": "two-columns",
+          "sections": [
+            { "title": "Información General", "icon": "info", "fields": ["codigo","nombre","descuento"], "collapsible": false },
+            { "title": "Estado",              "icon": "toggle_on", "fields": ["activo","fechaCreacion"], "collapsible": false }
+          ]
+        }
+      },
+      "apiConfig": {
+        "route": "/api/v1/tipos-cliente",
+        "operations": ["getAll","getById","create","update","delete"],
+        "authentication": true,
+        "versioning": "v1",
+        "roles": {
+          "getAll":   ["Admin","Vendedor","Gerente"],
+          "getById":  ["Admin","Vendedor","Gerente"],
+          "create":   ["Admin","Gerente"],
+          "update":   ["Admin","Gerente"],
+          "delete":   ["Admin"]
+        }
+      }
+    },
+    {
+      "name": "Cliente",
+      "table": "Clientes",
+      "description": "Clientes del sistema de ventas",
+      "fields": [
+        {
+          "name": "id",
+          "type": "int",
+          "isPK": true,
+          "autoIncrement": true,
+          "required": true,
+          "ui": { "type": "number", "label": "ID", "readonly": true }
+        },
+        {
+          "name": "codigo",
+          "type": "string",
+          "length": 20,
+          "required": true,
+          "unique": true,
+          "description": "Código único del cliente",
+          "validation": { "minLength": 3, "maxLength": 20, "regex": "^CLI-[0-9]{4,}$", "regexMessage": "Formato: CLI-0001" },
+          "ui": { "type": "text", "label": "Código", "placeholder": "CLI-0001" }
+        },
+        {
+          "name": "razonSocial",
+          "type": "string",
+          "length": 200,
+          "required": true,
+          "description": "Nombre o razón social del cliente",
+          "validation": { "minLength": 2, "maxLength": 200 },
+          "ui": { "type": "text", "label": "Razón Social", "placeholder": "Empresa S.A." }
+        },
+        {
+          "name": "ruc",
+          "type": "string",
+          "length": 20,
+          "required": true,
+          "unique": true,
+          "description": "RUC o documento de identidad fiscal",
+          "validation": { "minLength": 8, "maxLength": 20, "regex": "^[0-9]{8,20}$", "regexMessage": "Solo números, 8 a 20 dígitos" },
+          "ui": { "type": "text", "label": "RUC / NIT", "placeholder": "20123456789" }
+        },
+        {
+          "name": "email",
+          "type": "string",
+          "length": 150,
+          "required": true,
+          "unique": true,
+          "description": "Correo electrónico del cliente",
+          "validation": { "maxLength": 150, "email": true },
+          "ui": { "type": "email", "label": "Email", "placeholder": "cliente@empresa.com" }
+        },
+        {
+          "name": "telefono",
+          "type": "string",
+          "length": 20,
+          "required": false,
+          "validation": { "maxLength": 20, "regex": "^[+0-9\\s\\-()]{7,20}$", "regexMessage": "Teléfono inválido" },
+          "ui": { "type": "text", "label": "Teléfono", "placeholder": "+51 999 000 000" }
+        },
+        {
+          "name": "direccion",
+          "type": "string",
+          "length": 300,
+          "required": false,
+          "validation": { "maxLength": 300 },
+          "ui": { "type": "textarea", "label": "Dirección", "placeholder": "Av. Principal 123, Lima" }
+        },
+        {
+          "name": "tipoClienteId",
+          "type": "int",
+          "required": true,
+          "description": "FK al tipo de cliente",
+          "ui": {
+            "type": "dropdown",
+            "label": "Tipo de Cliente",
+            "placeholder": "Seleccione...",
+            "dataSource": {
+              "entity": "TipoCliente",
+              "valueField": "id",
+              "labelField": "nombre"
+            }
+          }
+        },
+        {
+          "name": "limiteCredito",
+          "type": "decimal",
+          "precision": 18,
+          "scale": 2,
+          "required": false,
+          "defaultValue": 0,
+          "description": "Límite de crédito en moneda local",
+          "validation": { "min": 0, "max": 9999999.99 },
+          "ui": { "type": "number", "label": "Límite de Crédito", "placeholder": "0.00" }
+        },
+        {
+          "name": "fechaNacimiento",
+          "type": "date",
+          "required": false,
+          "description": "Fecha de nacimiento o constitución",
+          "validation": { "maxDate": "today" },
+          "ui": { "type": "datepicker", "label": "Fecha de Nacimiento / Constitución" }
+        },
+        {
+          "name": "activo",
+          "type": "bool",
+          "required": true,
+          "defaultValue": true,
+          "ui": { "type": "checkbox", "label": "Activo" }
+        },
+        {
+          "name": "observaciones",
+          "type": "string",
+          "length": 1000,
+          "required": false,
+          "validation": { "maxLength": 1000 },
+          "ui": { "type": "textarea", "label": "Observaciones", "placeholder": "Notas adicionales..." }
+        },
+        {
+          "name": "fechaRegistro",
+          "type": "date",
+          "required": true,
+          "ui": { "type": "datepicker", "label": "Fecha de Registro", "readonly": true }
+        }
+      ],
+      "relations": [
+        {
+          "type": "ManyToOne",
+          "target": "TipoCliente",
+          "field": "tipoClienteId",
+          "targetField": "id",
+          "cascade": false,
+          "nullable": false
+        }
+      ],
+      "businessRules": [
+        {
+          "name": "setFechaRegistro",
+          "description": "Asignar fecha de registro automáticamente al crear",
+          "trigger": "beforeInsert",
+          "condition": "true",
+          "action": "setField",
+          "targetField": "fechaRegistro",
+          "targetValue": "DateTime.UtcNow"
+        },
+        {
+          "name": "validateLimiteCreditoVIP",
+          "description": "Clientes VIP deben tener límite de crédito mayor a 0",
+          "trigger": "beforeInsert",
+          "condition": "entity.tipoCliente?.codigo == 'VIP' && entity.limiteCredito <= 0",
+          "action": "throw",
+          "message": "Los clientes VIP deben tener un límite de crédito mayor a 0",
+          "aiGenerate": true
+        },
+        {
+          "name": "notifyNewClient",
+          "description": "Enviar notificación al crear un nuevo cliente",
+          "trigger": "afterInsert",
+          "condition": "true",
+          "action": "sendNotification",
+          "message": "Nuevo cliente registrado: {razonSocial}",
+          "aiGenerate": true
+        },
+        {
+          "name": "preventDeleteWithOrders",
+          "description": "No permitir eliminar clientes con pedidos",
+          "trigger": "beforeDelete",
+          "condition": "entity.pedidos?.Any() == true",
+          "action": "throw",
+          "message": "No se puede eliminar un cliente que tiene pedidos registrados",
+          "aiGenerate": true
+        }
+      ],
+      "screenConfig": {
+        "list": {
+          "title": "Gestión de Clientes",
+          "columns": [
+            { "field": "codigo",       "header": "Código",         "sortable": true, "filterable": true, "width": "130px" },
+            { "field": "razonSocial",  "header": "Razón Social",   "sortable": true, "filterable": true },
+            { "field": "ruc",          "header": "RUC / NIT",      "sortable": true, "filterable": true },
+            { "field": "email",        "header": "Email",          "sortable": true },
+            { "field": "telefono",     "header": "Teléfono",       "sortable": false },
+            { "field": "tipoCliente",  "header": "Tipo",           "sortable": true, "filterable": true },
+            { "field": "limiteCredito","header": "Límite Crédito", "sortable": true, "pipe": "currency:'PEN':'symbol':'1.2-2'" },
+            { "field": "activo",       "header": "Activo",         "sortable": false }
+          ],
+          "actions": [
+            { "name": "view",   "label": "Ver",      "icon": "visibility", "color": "default",  "roles": ["Admin","Vendedor","Gerente"] },
+            { "name": "edit",   "label": "Editar",   "icon": "edit",       "color": "primary",  "roles": ["Admin","Gerente"] },
+            { "name": "delete", "label": "Eliminar", "icon": "delete",     "color": "warn",     "roles": ["Admin"] }
+          ],
+          "filters": [
+            { "field": "razonSocial", "label": "Buscar cliente",   "type": "text" },
+            { "field": "ruc",         "label": "RUC",              "type": "text" },
+            { "field": "activo",      "label": "Solo activos",     "type": "checkbox" }
+          ],
+          "pagination": { "enabled": true, "pageSize": 15, "pageSizeOptions": [10,15,25,50] },
+          "sort": { "field": "razonSocial", "direction": "asc" }
+        },
+        "form": {
+          "title": "Datos del Cliente",
+          "layout": "sectioned",
+          "sections": [
+            { "title": "Identificación",  "icon": "badge",         "fields": ["codigo","razonSocial","ruc"],            "collapsible": false },
+            { "title": "Contacto",        "icon": "contact_phone", "fields": ["email","telefono","direccion"],          "collapsible": false },
+            { "title": "Comercial",       "icon": "business",      "fields": ["tipoClienteId","limiteCredito"],         "collapsible": false },
+            { "title": "Datos Adicionales","icon": "more_horiz",   "fields": ["fechaNacimiento","observaciones","activo"], "collapsible": true }
+          ]
+        }
+      },
+      "apiConfig": {
+        "route": "/api/v1/clientes",
+        "operations": ["getAll","getById","create","update","delete","search","export"],
+        "authentication": true,
+        "versioning": "v1",
+        "roles": {
+          "getAll":  ["Admin","Vendedor","Gerente"],
+          "getById": ["Admin","Vendedor","Gerente"],
+          "create":  ["Admin","Vendedor","Gerente"],
+          "update":  ["Admin","Gerente"],
+          "delete":  ["Admin"]
+        },
+        "rateLimiting": { "enabled": true, "requestsPerMinute": 100 }
+      }
+    },
+    {
+      "name": "Producto",
+      "table": "Productos",
+      "description": "Catálogo de productos disponibles para la venta",
+      "fields": [
+        {
+          "name": "id",
+          "type": "int",
+          "isPK": true,
+          "autoIncrement": true,
+          "required": true,
+          "ui": { "type": "number", "label": "ID", "readonly": true }
+        },
+        {
+          "name": "sku",
+          "type": "string",
+          "length": 50,
+          "required": true,
+          "unique": true,
+          "description": "SKU único del producto",
+          "validation": { "minLength": 3, "maxLength": 50, "regex": "^[A-Z0-9\\-]+$", "regexMessage": "SKU solo puede contener letras mayúsculas, números y guiones" },
+          "ui": { "type": "text", "label": "SKU", "placeholder": "PROD-001" }
+        },
+        {
+          "name": "nombre",
+          "type": "string",
+          "length": 200,
+          "required": true,
+          "description": "Nombre comercial del producto",
+          "validation": { "minLength": 2, "maxLength": 200 },
+          "ui": { "type": "text", "label": "Nombre del Producto", "placeholder": "Laptop Dell XPS 15" }
+        },
+        {
+          "name": "descripcion",
+          "type": "string",
+          "length": 2000,
+          "required": false,
+          "validation": { "maxLength": 2000 },
+          "ui": { "type": "textarea", "label": "Descripción", "placeholder": "Descripción detallada del producto" }
+        },
+        {
+          "name": "categoria",
+          "type": "string",
+          "length": 100,
+          "required": true,
+          "ui": {
+            "type": "dropdown",
+            "label": "Categoría",
+            "placeholder": "Seleccione categoría...",
+            "dataSource": {
+              "staticOptions": [
+                { "value": "ELECTRONICA",    "label": "Electrónica" },
+                { "value": "ROPA",           "label": "Ropa y Accesorios" },
+                { "value": "ALIMENTOS",      "label": "Alimentos y Bebidas" },
+                { "value": "HOGAR",          "label": "Hogar y Jardín" },
+                { "value": "SERVICIOS",      "label": "Servicios" },
+                { "value": "OTROS",          "label": "Otros" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "precioUnitario",
+          "type": "decimal",
+          "precision": 18,
+          "scale": 2,
+          "required": true,
+          "description": "Precio de venta unitario",
+          "validation": { "min": 0.01 },
+          "ui": { "type": "number", "label": "Precio Unitario", "placeholder": "0.00" }
+        },
+        {
+          "name": "costo",
+          "type": "decimal",
+          "precision": 18,
+          "scale": 2,
+          "required": false,
+          "description": "Costo de adquisición",
+          "validation": { "min": 0 },
+          "ui": { "type": "number", "label": "Costo", "placeholder": "0.00" }
+        },
+        {
+          "name": "stock",
+          "type": "int",
+          "required": true,
+          "defaultValue": 0,
+          "description": "Stock disponible",
+          "validation": { "min": 0 },
+          "ui": { "type": "number", "label": "Stock", "placeholder": "0" }
+        },
+        {
+          "name": "stockMinimo",
+          "type": "int",
+          "required": false,
+          "defaultValue": 0,
+          "description": "Stock mínimo antes de alerta",
+          "validation": { "min": 0 },
+          "ui": { "type": "number", "label": "Stock Mínimo", "placeholder": "0" }
+        },
+        {
+          "name": "unidadMedida",
+          "type": "string",
+          "length": 20,
+          "required": true,
+          "ui": {
+            "type": "radio",
+            "label": "Unidad de Medida",
+            "dataSource": {
+              "staticOptions": [
+                { "value": "UND", "label": "Unidad" },
+                { "value": "KG",  "label": "Kilogramo" },
+                { "value": "LT",  "label": "Litro" },
+                { "value": "MT",  "label": "Metro" },
+                { "value": "CJA", "label": "Caja" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "aplicaIgv",
+          "type": "bool",
+          "required": true,
+          "defaultValue": true,
+          "description": "Indica si el producto aplica impuesto (IGV/IVA)",
+          "ui": { "type": "checkbox", "label": "Aplica IGV/IVA" }
+        },
+        {
+          "name": "activo",
+          "type": "bool",
+          "required": true,
+          "defaultValue": true,
+          "ui": { "type": "checkbox", "label": "Activo" }
+        },
+        {
+          "name": "fechaCreacion",
+          "type": "date",
+          "required": true,
+          "ui": { "type": "datepicker", "label": "Fecha de Creación", "readonly": true }
+        },
+        {
+          "name": "fechaUltimaActualizacion",
+          "type": "date",
+          "required": false,
+          "ui": { "type": "datepicker", "label": "Última Actualización", "readonly": true }
+        }
+      ],
+      "businessRules": [
+        {
+          "name": "setFechaCreacion",
+          "description": "Asignar fecha de creación",
+          "trigger": "beforeInsert",
+          "condition": "true",
+          "action": "setField",
+          "targetField": "fechaCreacion",
+          "targetValue": "DateTime.UtcNow"
+        },
+        {
+          "name": "setFechaActualizacion",
+          "description": "Actualizar fecha de última modificación",
+          "trigger": "beforeUpdate",
+          "condition": "true",
+          "action": "setField",
+          "targetField": "fechaUltimaActualizacion",
+          "targetValue": "DateTime.UtcNow"
+        },
+        {
+          "name": "validatePrecioMayorCosto",
+          "description": "El precio debe ser mayor o igual al costo",
+          "trigger": "beforeInsert",
+          "condition": "entity.costo.HasValue && entity.precioUnitario < entity.costo",
+          "action": "throw",
+          "message": "El precio unitario no puede ser menor al costo de adquisición"
+        },
+        {
+          "name": "alertaStockMinimo",
+          "description": "Alerta cuando el stock cae por debajo del mínimo",
+          "trigger": "afterUpdate",
+          "condition": "entity.stock <= entity.stockMinimo",
+          "action": "sendNotification",
+          "message": "ALERTA: El producto {sku} - {nombre} tiene stock crítico ({stock} unidades)",
+          "aiGenerate": true
+        },
+        {
+          "name": "preventDeleteWithStock",
+          "description": "No permitir eliminar productos con stock",
+          "trigger": "beforeDelete",
+          "condition": "entity.stock > 0",
+          "action": "throw",
+          "message": "No se puede eliminar un producto con stock disponible. Ajuste el stock a 0 primero."
+        }
+      ],
+      "screenConfig": {
+        "list": {
+          "title": "Catálogo de Productos",
+          "columns": [
+            { "field": "sku",             "header": "SKU",       "sortable": true, "filterable": true, "width": "130px" },
+            { "field": "nombre",          "header": "Nombre",    "sortable": true, "filterable": true },
+            { "field": "categoria",       "header": "Categoría", "sortable": true, "filterable": true },
+            { "field": "precioUnitario",  "header": "Precio",    "sortable": true, "pipe": "currency:'PEN':'symbol':'1.2-2'" },
+            { "field": "stock",           "header": "Stock",     "sortable": true },
+            { "field": "unidadMedida",    "header": "U/M",       "sortable": false, "width": "80px" },
+            { "field": "activo",          "header": "Activo",    "sortable": false }
+          ],
+          "actions": [
+            { "name": "view",       "label": "Ver",          "icon": "visibility",   "color": "default", "roles": ["Admin","Vendedor","Gerente"] },
+            { "name": "edit",       "label": "Editar",       "icon": "edit",         "color": "primary", "roles": ["Admin","Gerente"] },
+            { "name": "ajusteStock","label": "Ajuste Stock", "icon": "inventory_2",  "color": "accent",  "roles": ["Admin","Gerente"] },
+            { "name": "delete",     "label": "Eliminar",     "icon": "delete",       "color": "warn",    "roles": ["Admin"] }
+          ],
+          "filters": [
+            { "field": "nombre",    "label": "Buscar producto", "type": "text" },
+            { "field": "sku",       "label": "SKU",             "type": "text" },
+            { "field": "categoria", "label": "Categoría",       "type": "select" },
+            { "field": "activo",    "label": "Solo activos",    "type": "checkbox" }
+          ],
+          "pagination": { "enabled": true, "pageSize": 20, "pageSizeOptions": [10,20,50,100] },
+          "sort": { "field": "nombre", "direction": "asc" }
+        },
+        "form": {
+          "title": "Producto",
+          "layout": "sectioned",
+          "sections": [
+            { "title": "Identificación", "icon": "inventory",    "fields": ["sku","nombre","categoria","descripcion"],          "collapsible": false },
+            { "title": "Precios",        "icon": "attach_money", "fields": ["precioUnitario","costo","aplicaIgv"],              "collapsible": false },
+            { "title": "Inventario",     "icon": "warehouse",    "fields": ["stock","stockMinimo","unidadMedida"],              "collapsible": false },
+            { "title": "Estado",         "icon": "toggle_on",    "fields": ["activo","fechaCreacion","fechaUltimaActualizacion"], "collapsible": true }
+          ]
+        }
+      },
+      "apiConfig": {
+        "route": "/api/v1/productos",
+        "operations": ["getAll","getById","create","update","delete","search","export"],
+        "authentication": true,
+        "versioning": "v1",
+        "roles": {
+          "getAll":  ["Admin","Vendedor","Gerente"],
+          "getById": ["Admin","Vendedor","Gerente"],
+          "create":  ["Admin","Gerente"],
+          "update":  ["Admin","Gerente"],
+          "delete":  ["Admin"]
+        },
+        "rateLimiting": { "enabled": true, "requestsPerMinute": 200 }
+      }
+    }
+  ]
+}

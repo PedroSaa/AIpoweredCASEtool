@@ -1,0 +1,120 @@
+{{~ # Angular List Component HTML – AICASE ~}}
+<div class="page-container">
+
+  <!-- Header -->
+  <div class="page-header">
+    <h1>{{ entity.screen_config.list.title }}</h1>
+    <button mat-raised-button color="primary" (click)="onNew()">
+      <mat-icon>add</mat-icon> Nuevo
+    </button>
+    {{~ if array.contains entity.api_config.operations "export" ~}}
+    <button mat-stroked-button (click)="onExport()">
+      <mat-icon>download</mat-icon> Exportar
+    </button>
+    {{~ end ~}}
+  </div>
+
+  <!-- Filters -->
+  {{~ if entity.screen_config.list.filters.size > 0 ~}}
+  <mat-card class="filter-card">
+    <mat-card-content>
+      <div class="filter-row">
+        {{~ for filter in entity.screen_config.list.filters ~}}
+        {{~ if filter.type == "text" ~}}
+        <mat-form-field appearance="outline">
+          <mat-label>{{ filter.label }}</mat-label>
+          <input matInput [(ngModel)]="searchText" placeholder="{{ filter.label }}" (keyup.enter)="loadData()">
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+        {{~ else if filter.type == "checkbox" ~}}
+        <mat-checkbox [(ngModel)]="filterActivo" (change)="loadData()">{{ filter.label }}</mat-checkbox>
+        {{~ else if filter.type == "select" ~}}
+        <mat-form-field appearance="outline">
+          <mat-label>{{ filter.label }}</mat-label>
+          <mat-select [(ngModel)]="filter{{ filter.field }}" (selectionChange)="loadData()">
+            <mat-option value="">Todos</mat-option>
+          </mat-select>
+        </mat-form-field>
+        {{~ end ~}}
+        {{~ end ~}}
+        <button mat-stroked-button (click)="loadData()">
+          <mat-icon>filter_list</mat-icon> Filtrar
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+  {{~ end ~}}
+
+  <!-- Loading spinner -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+
+  <!-- Data Table -->
+  <mat-card>
+    <mat-card-content>
+      <table mat-table [dataSource]="dataSource" matSort (matSortChange)="onSortChange($event)" class="full-width-table">
+
+        {{~ for col in entity.screen_config.list.columns ~}}
+        <!-- Column: {{ col.header }} -->
+        <ng-container matColumnDef="{{ col.field }}">
+          <th mat-header-cell *matHeaderCellDef {{~ if col.sortable ~}}mat-sort-header{{~ end ~}}
+            {{~ if col.width ~}}[style.width]="'{{ col.width }}'"{{~ end ~}}>
+            {{ col.header }}
+          </th>
+          <td mat-cell *matCellDef="let row">
+            {{~ if col.pipe ~}}
+            {{ "{{ row." + col.field + " | " + col.pipe + " }}" }}
+            {{~ else ~}}
+            {{ "{{ row." + col.field + " }}" }}
+            {{~ end ~}}
+          </td>
+        </ng-container>
+        {{~ end ~}}
+
+        <!-- Actions column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Acciones</th>
+          <td mat-cell *matCellDef="let row">
+            {{~ for action in entity.screen_config.list.actions ~}}
+            {{~ if action.name == "edit" ~}}
+            <button mat-icon-button color="{{ action.color }}" (click)="onEdit(row)" matTooltip="{{ action.label }}">
+              <mat-icon>{{ action.icon }}</mat-icon>
+            </button>
+            {{~ else if action.name == "delete" ~}}
+            <button mat-icon-button color="{{ action.color }}" (click)="onDelete(row)" matTooltip="{{ action.label }}">
+              <mat-icon>{{ action.icon }}</mat-icon>
+            </button>
+            {{~ else ~}}
+            <button mat-icon-button (click)="on{{ action.name | string.upcase | string.slice 0 1 }}{{ action.name | string.slice 1 }}(row)" matTooltip="{{ action.label }}">
+              <mat-icon>{{ action.icon }}</mat-icon>
+            </button>
+            {{~ end ~}}
+            {{~ end ~}}
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+        <!-- No data row -->
+        <tr class="mat-row" *matNoDataRow>
+          <td class="mat-cell" [attr.colspan]="displayedColumns.length">
+            No se encontraron registros.
+          </td>
+        </tr>
+      </table>
+
+      {{~ if entity.screen_config.list.pagination.enabled ~}}
+      <mat-paginator
+        [length]="totalItems"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="[{{ entity.screen_config.list.pagination.page_size_options | array.join ", " }}]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons>
+      </mat-paginator>
+      {{~ end ~}}
+    </mat-card-content>
+  </mat-card>
+
+</div>

@@ -1,0 +1,31 @@
+{{~ # Angular Routing Module – AICASE ~}}
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+{{~ for entity in entities ~}}
+import { {{ entity.name }}ListComponent } from './components/{{ entity.kebab_name }}/{{ entity.kebab_name }}-list/{{ entity.kebab_name }}-list.component';
+import { {{ entity.name }}FormComponent } from './components/{{ entity.kebab_name }}/{{ entity.kebab_name }}-form/{{ entity.kebab_name }}-form.component';
+{{~ end ~}}
+
+const routes: Routes = [
+  { path: '', redirectTo: '/home', pathMatch: 'full' },
+
+  {{~ for entity in entities ~}}
+  // ── {{ entity.name }} ──────────────────────────────────────────────────
+  {
+    path: '{{ entity.kebab_name }}',
+    children: [
+      { path: '',     component: {{ entity.name }}ListComponent },
+      { path: 'new',  component: {{ entity.name }}FormComponent },
+      { path: 'edit/:id', component: {{ entity.name }}FormComponent }
+    ]
+  },
+  {{~ end ~}}
+
+  { path: '**', redirectTo: '/home' }
+];
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes, { useHash: false })],
+  exports: [RouterModule]
+})
+export class AppRoutingModule {}
